@@ -44,7 +44,6 @@
         #viewport {
             position: relative;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             background: #000;
             overflow: hidden;
             width: 100%;
@@ -407,24 +406,6 @@
         }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .auth-btn-container {
-            margin-top: 10px;
-            text-align: center;
-        }
-        .google-btn {
-            background: white;
-            color: #333;
-            border: 1px solid #ddd;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
     </style>
 </head>
 <body>
@@ -441,7 +422,6 @@
             </div>
             
             <div class="header-actions">
-                <!-- Added Login Trigger -->
                 <div class="credit-pill" id="credit-display" onclick="app.login()" title="Click to Login/Save">
                     <i data-lucide="user" size="16"></i>
                     <span id="credit-count">...</span>
@@ -524,7 +504,7 @@
                         <li style="margin-bottom: 8px;">✓ No Watermark</li>
                         <li>✓ Cancel Anytime</li>
                     </ul>
-                    <button class="buy-btn" onclick="app.processPayment('monthly')" style="margin-top: auto;">Subscribe</button>
+                    <button class="buy-btn" id="btn-monthly" onclick="app.processPayment('monthly')" style="margin-top: auto;">Subscribe</button>
                 </div>
                 <div style="flex: 1; min-width: 200px; background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), rgba(0,0,0,0)); padding: 20px; border-radius: 12px; border: 1px solid var(--gold); position: relative;">
                     <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--gold); color: black; padding: 4px 12px; border-radius: 12px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase;">Best Value</div>
@@ -535,7 +515,7 @@
                         <li style="margin-bottom: 8px;">✓ All Pro Features</li>
                         <li>✓ Future Updates Included</li>
                     </ul>
-                    <button class="buy-btn" onclick="app.processPayment('lifetime')" style="background: var(--gold); color: black;">Get Lifetime Access</button>
+                    <button class="buy-btn" id="btn-lifetime" onclick="app.processPayment('lifetime')" style="background: var(--gold); color: black;">Get Lifetime Access</button>
                 </div>
             </div>
             <div style="margin-top: 20px; font-size: 0.7rem; color: #444; text-align:center;">Secured by Stripe • 100% Money Back Guarantee</div>
@@ -993,7 +973,9 @@
                     }
                 }
 
-                const btn = document.querySelector(plan === 'monthly' ? '.buy-btn' : '.buy-btn:last-child');
+                // SPECIFIC ID SELECTORS
+                const btnId = plan === 'monthly' ? 'btn-monthly' : 'btn-lifetime';
+                const btn = document.getElementById(btnId);
                 
                 const links = {
                     monthly: "https://buy.stripe.com/dRmbJ1dxrgrU3k9fkc24001", 
@@ -1008,7 +990,7 @@
                     url = `${url}${separator}client_reference_id=${currentUser.uid}`;
                 }
 
-                btn.innerText = "Redirecting...";
+                if(btn) btn.innerText = "Redirecting...";
                 setTimeout(() => window.open(url, '_blank'), 500);
             }
         };
