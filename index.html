@@ -549,7 +549,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Config (PROD) ---
         const firebaseConfig = {
           apiKey: "AIzaSyB06unFPCYmkomvzc-NH8OFPwGmJTupewo",
           authDomain: "syna-app-ce68f.firebaseapp.com",
@@ -616,7 +615,6 @@
              }
         }
 
-        // --- Audio Engine ---
         let audioCtx, analyser, dataArray, source;
         let audioEl = new Audio();
         audioEl.crossOrigin = "anonymous";
@@ -641,7 +639,6 @@
             dataArray = new Uint8Array(analyser.frequencyBinCount);
         }
 
-        // --- Visual Engine (Three.js) ---
         let scene, camera, renderer;
         let bars = [], ring, wave;
         let logoMesh, titleMesh, watermarkMesh;
@@ -677,7 +674,8 @@
             // 1. Neon Bars
             const barGeo = new THREE.BoxGeometry(0.5, 1, 0.5);
             const barMat = new THREE.MeshStandardMaterial({ 
-                color: 0xffffff, roughness: 0.1, metalness: 0.8, emissive: 0x000000 
+                color: 0xffffff, roughness: 0.1, metalness: 0.8, emissive: 0x000000,
+                transparent: true, opacity: 0.9 // Glassmorphism update
             });
             for(let i=0; i<64; i++) {
                 const mesh = new THREE.Mesh(barGeo, barMat);
@@ -688,14 +686,14 @@
 
             // 2. Solar Ring
             const ringGeo = new THREE.TorusGeometry(8, 0.2, 16, 100);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0xFF3B30, wireframe: true });
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xFF3B30, wireframe: true, transparent: true, opacity: 0.8 });
             ring = new THREE.Mesh(ringGeo, ringMat);
             ring.visible = false;
             scene.add(ring);
 
             // 3. Fluid Wave
             const waveGeo = new THREE.PlaneGeometry(40, 40, 32, 32);
-            const waveMat = new THREE.MeshBasicMaterial({ color: 0x007AFF, wireframe: true });
+            const waveMat = new THREE.MeshBasicMaterial({ color: 0x007AFF, wireframe: true, transparent: true, opacity: 0.8 });
             wave = new THREE.Mesh(waveGeo, waveMat);
             wave.rotation.x = -Math.PI / 2;
             wave.position.y = -5;
@@ -710,7 +708,6 @@
             animate();
         }
 
-        // --- Text Texture Generation ---
         function createTitleMesh(text) {
             if(titleMesh) scene.remove(titleMesh);
             if(!text) return;
@@ -735,7 +732,7 @@
             const geo = new THREE.PlaneGeometry(20, 5);
             const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
             titleMesh = new THREE.Mesh(geo, mat);
-            titleMesh.position.set(0, 10, 0); // Above visuals
+            titleMesh.position.set(0, 10, 0); 
             scene.add(titleMesh);
         }
         
@@ -782,6 +779,8 @@
 
             if(analyser) analyser.getByteFrequencyData(dataArray);
 
+            // Added slight transparency update logic if needed for effects, kept simple for perf
+            // Position updates
             if (activeStyle === 'bars') {
                 bars.forEach((bar, i) => {
                     bar.visible = true;
@@ -789,7 +788,7 @@
                         const val = dataArray[i] || 0;
                         const scale = (val / 255) * 15 + 0.1;
                         bar.scale.y = scale;
-                        bar.position.y = scale / 2;
+                        bar.position.y = (scale / 2) - 5; // Move down to clear center stage
                         const hue = (i / 64) + (Date.now() * 0.0001);
                         bar.material.color.setHSL(hue % 1, 1, 0.5);
                         bar.material.emissive.setHSL(hue % 1, 1, 0.2);
@@ -808,6 +807,8 @@
                     ring.rotation.z += 0.01;
                     ring.rotation.x += 0.01;
                     ring.material.color.setHSL(bass, 1, 0.5);
+                    // Ring is already centered, maybe lower slightly
+                    ring.position.y = -2;
                 }
             }
             else if (activeStyle === 'wave') {
@@ -821,6 +822,7 @@
                         pos.setZ(i, z);
                     }
                     pos.needsUpdate = true;
+                    wave.position.y = -8; // Lower wave further
                 }
             }
 
@@ -851,7 +853,8 @@
             
             textureLoader.load(url, (tex) => {
                 bgMesh.material.map = tex;
-                bgMesh.material.color.set(0xffffff); 
+                // Dim the background slightly
+                bgMesh.material.color.setHex(0x999999); 
                 bgMesh.material.needsUpdate = true;
                 
                 scene.background = null;
