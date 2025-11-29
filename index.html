@@ -4,23 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SYNA | Audio Visualizer</title>
-    <meta name="description" content="Turn audio into viral 4K video instantly. The AI visualizer for creators.">
     
-    <!-- Social Sharing -->
+    <meta name="description" content="Turn audio into viral 4K video instantly. The AI visualizer for creators.">
     <meta property="og:title" content="SYNA | Visuals for Audio">
     <meta property="og:description" content="Turn audio into viral 4K video instantly.">
     <meta property="og:image" content="logo.png">
-    
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="logo.png">
     
-    <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
@@ -48,23 +41,17 @@
             align-items: center;
         }
 
-        /* --- Canvas Wrapper --- */
         #viewport {
             position: relative;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             background: #000;
             overflow: hidden;
             width: 100%;
             height: 100%;
         }
 
-        #canvas-container {
-            width: 100%;
-            height: 100%;
-        }
+        #canvas-container { width: 100%; height: 100%; }
 
-        /* --- Dynamic Watermark --- */
         #watermark-preview {
             position: absolute;
             bottom: 30px;
@@ -81,7 +68,6 @@
             gap: 10px;
         }
 
-        /* --- UI Overlay --- */
         #ui-layer {
             position: absolute;
             inset: 0;
@@ -92,7 +78,6 @@
             justify-content: space-between;
         }
 
-        /* Top Bar */
         .header {
             pointer-events: auto;
             display: flex;
@@ -114,8 +99,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            white-space: nowrap;
-            letter-spacing: 2px;
         }
 
         .header-actions {
@@ -137,7 +120,6 @@
             backdrop-filter: blur(10px);
             white-space: nowrap;
         }
-        
         .credit-pill.gold {
             border-color: var(--gold);
             color: var(--gold);
@@ -163,10 +145,8 @@
         .btn-primary { background: var(--accent); border-color: var(--accent); }
         .btn-primary:hover { background: #006ce6; }
 
-        /* Hidden Inputs */
         input[type="file"] { display: none; }
 
-        /* Brand Kit Panel (Left) */
         .brand-panel {
             pointer-events: auto;
             position: fixed;
@@ -195,7 +175,6 @@
         }
         .brand-tool:hover { background: #fff; color: #000; }
         
-        /* Format Switcher (Right) */
         .format-panel {
             pointer-events: auto;
             position: fixed;
@@ -227,7 +206,7 @@
 
         .tooltip {
             position: absolute;
-            left: 55px; /* For left panel */
+            left: 55px; 
             background: #000;
             padding: 5px 10px;
             border-radius: 4px;
@@ -241,7 +220,6 @@
         .format-panel .tooltip { left: auto; right: 55px; }
         .format-panel .format-btn:hover .tooltip { opacity: 1; }
 
-        /* Bottom Controls */
         .controls {
             pointer-events: auto;
             background: var(--surface);
@@ -310,7 +288,6 @@
         }
         .title-input::placeholder { color: rgba(255,255,255,0.3); }
 
-        /* Style Options */
         .style-selector {
             display: flex;
             gap: 10px;
@@ -334,10 +311,9 @@
         }
         .style-opt.active { background: #fff; color: #000; border-color: #fff; }
 
-        /* Support Link */
         .support-link {
             position: fixed;
-            bottom: 100px; /* Above controls */
+            bottom: 100px; 
             right: 20px;
             font-size: 0.7rem;
             color: #444;
@@ -348,31 +324,23 @@
         }
         .support-link:hover { color: #fff; }
 
-        /* --- MOBILE FIXES --- */
         @media (max-width: 768px) {
             .header { padding: 10px 15px; }
             .logo { font-size: 1.2rem; }
-            
             .btn span { display: none; }
             .btn { padding: 10px; }
-            
             .credit-pill { padding: 6px 10px; font-size: 0.7rem; }
-            
             .brand-panel, .format-panel { top: 70px; gap: 10px; }
-            
             .controls { padding: 15px; gap: 10px; }
             .record-btn { width: 50px; height: 50px; }
             .record-inner { width: 36px; height: 36px; }
             .record-btn.recording .record-inner { width: 20px; height: 20px; }
-            
             .title-input { width: 120px; font-size: 0.8rem; }
             .style-opt { padding: 6px 12px; font-size: 0.7rem; }
             .style-selector { top: -50px; }
-            
             .support-link { bottom: 90px; right: 10px; }
         }
 
-        /* Modals */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -388,7 +356,6 @@
         }
         .modal-overlay.open { opacity: 1; pointer-events: auto; }
 
-        /* Payment Modal Specifics */
         .buy-btn {
             width: 100%;
             padding: 15px;
@@ -403,7 +370,6 @@
         }
         .buy-btn:hover { filter: brightness(0.9); }
 
-        /* Render Overlay */
         #render-overlay {
             position: fixed;
             inset: 0;
@@ -436,17 +402,11 @@
 </head>
 <body>
 
-    <!-- Canvas Wrapper -->
-    <div id="viewport" style="width: 100%; height: 100%;">
+    <div id="viewport">
         <div id="canvas-container"></div>
-        
-        <!-- Preview Watermark (HTML - Only for UI) -->
-        <div id="watermark-preview">
-            <i data-lucide="waves" size="24"></i> SYNA
-        </div>
+        <div id="watermark-preview"><i data-lucide="waves" size="24"></i> SYNA</div>
     </div>
 
-    <!-- UI Layer -->
     <div id="ui-layer">
         <div class="header">
             <div class="logo">
@@ -469,7 +429,6 @@
             <input type="file" id="bg-input" accept="image/*">
         </div>
 
-        <!-- Brand Kit -->
         <div class="brand-panel">
             <div class="brand-tool" onclick="document.getElementById('logo-input').click()">
                 <i data-lucide="image" size="20"></i>
@@ -485,7 +444,6 @@
             </div>
         </div>
 
-        <!-- Format Switcher -->
         <div class="format-panel">
             <div class="format-btn active" onclick="app.setFormat('9:16', this)">
                 <i data-lucide="smartphone" size="20"></i>
@@ -501,7 +459,6 @@
             </div>
         </div>
 
-        <!-- Support Link -->
         <a href="mailto:support@synavisuals.app" class="support-link">Help & Support</a>
 
         <div class="controls">
@@ -521,7 +478,7 @@
         </div>
     </div>
 
-    <!-- Payment Modal (2 Tier) -->
+    <!-- Payment Modal -->
     <div class="modal-overlay" id="pay-modal">
         <div class="modal-card" style="background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 40px; width: 600px; max-width: 95%;">
             <div style="display: flex; justify-content: flex-end;">
@@ -531,8 +488,6 @@
             <p style="color: #888; margin-bottom: 30px; text-align:center;" id="modal-msg">Choose your access level.</p>
             
             <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
-                
-                <!-- Monthly Tier -->
                 <div style="flex: 1; min-width: 200px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid #333;">
                     <div style="font-size: 0.9rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Monthly</div>
                     <div style="font-size: 1.8rem; font-weight: 700; margin: 10px 0; color: #fff;">$19 <span style="font-size: 0.9rem; color: #666;">/mo</span></div>
@@ -543,8 +498,6 @@
                     </ul>
                     <button class="buy-btn" onclick="app.processPayment('monthly')" style="margin-top: auto;">Subscribe</button>
                 </div>
-
-                <!-- Lifetime Tier (Highlighted) -->
                 <div style="flex: 1; min-width: 200px; background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), rgba(0,0,0,0)); padding: 20px; border-radius: 12px; border: 1px solid var(--gold); position: relative;">
                     <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--gold); color: black; padding: 4px 12px; border-radius: 12px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase;">Best Value</div>
                     <div style="font-size: 0.9rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px;">Founding Member</div>
@@ -556,7 +509,6 @@
                     </ul>
                     <button class="buy-btn" onclick="app.processPayment('lifetime')" style="background: var(--gold); color: black;">Get Lifetime Access</button>
                 </div>
-
             </div>
             <div style="margin-top: 20px; font-size: 0.7rem; color: #444; text-align:center;">Secured by Stripe • 100% Money Back Guarantee</div>
         </div>
@@ -570,12 +522,10 @@
             </div>
             <h2 style="color: var(--gold);">Download Complete!</h2>
             <p style="color: #aaa; margin-bottom: 30px;">Your visualizer has been saved to your device.</p>
-            
             <div style="padding: 20px; background: #222; border-radius: 8px; margin-bottom: 20px;">
                 <p style="margin:0; font-size: 0.9rem;">Remaining Credits</p>
                 <div style="font-size: 2rem; font-weight: 700; color: #fff;" id="success-credit-count">2</div>
             </div>
-
             <button class="buy-btn" onclick="app.closeModal('success-modal')" style="background: #333; color: #fff;">Create Another</button>
         </div>
     </div>
@@ -592,7 +542,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Config (PROD) ---
+        // --- Firebase Config ---
         const firebaseConfig = {
           apiKey: "AIzaSyB06unFPCYmkomvzc-NH8OFPwGmJTupewo",
           authDomain: "syna-app-ce68f.firebaseapp.com",
@@ -606,7 +556,7 @@
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
         const db = getFirestore(fbApp);
-        const appId = 'syna-prod'; // Production ID
+        const appId = 'syna-prod';
 
         let currentUser = null;
         let isPro = false;
@@ -673,10 +623,11 @@
             dataArray = new Uint8Array(analyser.frequencyBinCount);
         }
 
-        // --- Visual Engine (Three.js) ---
+        // --- Visual Engine ---
         let scene, camera, renderer;
         let bars = [], ring, wave;
         let logoMesh, titleMesh, watermarkMesh;
+        let bgMesh; // For full-cover background
         let activeStyle = 'bars';
         let currentFormat = '9:16';
         let titleText = "";
@@ -733,17 +684,15 @@
             wave.visible = false;
             scene.add(wave);
 
-            // Create 3D Title Mesh (Hidden initially)
             createTitleMesh("");
-            
-            // Create 3D Watermark Mesh
             createWatermarkMesh();
+            createBackgroundMesh(); // Setup background plane
 
             handleResize();
             animate();
         }
 
-        // --- Text Texture Generation ---
+        // --- Text/Texture Generation ---
         function createTitleMesh(text) {
             if(titleMesh) scene.remove(titleMesh);
             if(!text) return;
@@ -768,7 +717,7 @@
             const geo = new THREE.PlaneGeometry(20, 5);
             const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
             titleMesh = new THREE.Mesh(geo, mat);
-            titleMesh.position.set(0, 10, 0); // Above visuals
+            titleMesh.position.set(0, 10, 0); 
             scene.add(titleMesh);
         }
         
@@ -793,10 +742,19 @@
             watermarkMesh.visible = false; 
             scene.add(watermarkMesh);
         }
+
+        // Smart Background Mesh
+        function createBackgroundMesh() {
+            const geo = new THREE.PlaneGeometry(100, 100); // Start big
+            const mat = new THREE.MeshBasicMaterial({ color: 0x050505, depthTest: false }); // Default dark
+            bgMesh = new THREE.Mesh(geo, mat);
+            bgMesh.position.z = -50; // Far behind
+            bgMesh.renderOrder = -1; // Ensure drawn first
+            scene.add(bgMesh);
+        }
         
         function updateWatermarkPosition() {
             if(!watermarkMesh) return;
-            // Position based on aspect ratio
             if(currentFormat === '9:16') watermarkMesh.position.set(6, -15, 5);
             else if(currentFormat === '1:1') watermarkMesh.position.set(8, -8, 5);
             else watermarkMesh.position.set(12, -6, 5);
@@ -852,9 +810,10 @@
             renderer.render(scene, camera);
         }
 
-        // --- BRAND KIT & TOOLS ---
+        // --- BRAND KIT ---
         const textureLoader = new THREE.TextureLoader();
 
+        // Logo Upload: SCALED UP
         document.getElementById('logo-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if(!file) return;
@@ -862,21 +821,33 @@
             if(logoMesh) scene.remove(logoMesh);
             textureLoader.load(url, (tex) => {
                 const aspect = tex.image.width / tex.image.height;
-                const geo = new THREE.PlaneGeometry(4 * aspect, 4);
+                // BIGGER: Was 4, now 10
+                const geo = new THREE.PlaneGeometry(10 * aspect, 10); 
                 const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
                 logoMesh = new THREE.Mesh(geo, mat);
-                logoMesh.position.set(0, 12, -5);
+                // LOWER: Was 12, now 8 to keep in frame
+                logoMesh.position.set(0, 8, -5);
                 scene.add(logoMesh);
             });
         });
 
+        // Background Upload: SMART COVER
         document.getElementById('bg-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if(!file) return;
             const url = URL.createObjectURL(file);
+            
             textureLoader.load(url, (tex) => {
-                scene.background = tex;
+                // Apply to our specialized BG plane
+                bgMesh.material.map = tex;
+                bgMesh.material.color.set(0xffffff); // Ensure full color
+                bgMesh.material.needsUpdate = true;
+                
+                // Clear scene bg so we see the mesh
+                scene.background = null;
                 scene.fog = null;
+                
+                handleResize(); // Trigger scale update
             });
         });
 
@@ -912,8 +883,11 @@
 
             resetBrand: () => {
                 if(logoMesh) scene.remove(logoMesh);
-                scene.background = new THREE.Color(0x050505);
+                // Reset BG Mesh
+                bgMesh.material.map = null;
+                bgMesh.material.color.set(0x050505);
                 scene.fog = new THREE.FogExp2(0x050505, 0.02);
+                
                 createTitleMesh("");
                 titleText = "";
                 document.querySelector('.title-input').value = "";
@@ -974,7 +948,6 @@
             processPayment: (plan) => {
                 const btn = document.querySelector(plan === 'monthly' ? '.buy-btn' : '.buy-btn:last-child');
                 
-                // --- STRIPE LINKS (LIVE) ---
                 const links = {
                     monthly: "https://buy.stripe.com/dRmbJ1dxrgrU3k9fkc24001", 
                     lifetime: "https://buy.stripe.com/7sY14n8d7cbEcUJ8VO24000"
@@ -983,8 +956,6 @@
                 let url = links[plan];
                 if(!url) return;
 
-                // AUTOMATION HOOK: Pass the Firebase User ID to Stripe
-                // This allows Zapier to know WHICH user to upgrade after payment.
                 if(currentUser && currentUser.uid) {
                     const separator = url.includes('?') ? '&' : '?';
                     url = `${url}${separator}client_reference_id=${currentUser.uid}`;
@@ -1084,6 +1055,18 @@
             else camera.position.z = 20;
             
             updateWatermarkPosition();
+            
+            // Update BG Mesh Scale to cover view
+            if(bgMesh) {
+                // Approximate visible height at depth 50
+                // H = 2 * tan(fov/2) * dist
+                // dist = 20 (cam) + 50 (bg) = 70
+                const vH = 2 * Math.tan((75/2) * Math.PI/180) * 70;
+                const vW = vH * aspect;
+                
+                // Scale mesh to cover
+                bgMesh.scale.set(vW / 100, vH / 100, 1);
+            }
         }
 
         window.addEventListener('resize', handleResize);
