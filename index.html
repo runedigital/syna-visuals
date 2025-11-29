@@ -83,8 +83,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent);
+            padding: 25px 30px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.95), transparent);
             width: 100%;
             box-sizing: border-box;
             position: fixed;
@@ -93,17 +93,15 @@
             z-index: 30;
         }
 
-        .logo {
-            font-weight: 700;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .logo img {
+            height: 45px; 
+            display: block;
+            image-rendering: -webkit-optimize-contrast;
         }
 
         .header-actions {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
             flex-shrink: 0;
         }
@@ -111,34 +109,36 @@
         .credit-pill {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            padding: 10px 18px;
+            border-radius: 24px;
+            font-size: 0.9rem;
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 8px;
             backdrop-filter: blur(10px);
             white-space: nowrap;
         }
+        
         .credit-pill.gold {
             border-color: var(--gold);
             color: var(--gold);
-            background: rgba(255, 215, 0, 0.1);
+            background: rgba(255, 215, 0, 0.15);
         }
 
         .btn {
             background: var(--surface);
             border: 1px solid var(--border);
             color: #fff;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 12px 24px;
+            border-radius: 12px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-weight: 500;
+            gap: 10px;
+            font-weight: 600;
             transition: all 0.2s;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             white-space: nowrap;
         }
         .btn:hover { background: #222; border-color: #555; }
@@ -151,7 +151,7 @@
             pointer-events: auto;
             position: fixed;
             left: 20px;
-            top: 100px;
+            top: 110px;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -159,9 +159,9 @@
         }
         
         .brand-tool {
-            width: 44px;
-            height: 44px;
-            border-radius: 8px;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
             background: rgba(0,0,0,0.6);
             border: 1px solid rgba(255,255,255,0.2);
             display: flex;
@@ -179,7 +179,7 @@
             pointer-events: auto;
             position: fixed;
             right: 20px;
-            top: 100px;
+            top: 110px;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -187,9 +187,9 @@
         }
         
         .format-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 8px;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
             background: rgba(0,0,0,0.6);
             border: 1px solid rgba(255,255,255,0.2);
             display: flex;
@@ -206,25 +206,26 @@
 
         .tooltip {
             position: absolute;
-            left: 55px; 
+            left: 65px; 
             background: #000;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.7rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
             opacity: 0;
             pointer-events: none;
             transition: 0.2s;
             white-space: nowrap;
+            font-weight: 600;
         }
         .brand-tool:hover .tooltip { opacity: 1; }
-        .format-panel .tooltip { left: auto; right: 55px; }
+        .format-panel .tooltip { left: auto; right: 65px; }
         .format-panel .format-btn:hover .tooltip { opacity: 1; }
 
         .controls {
             pointer-events: auto;
             background: var(--surface);
             border-top: 1px solid var(--border);
-            padding: 20px;
+            padding: 25px 20px 40px 20px;
             display: flex;
             gap: 20px;
             align-items: center;
@@ -238,8 +239,8 @@
         }
 
         .record-btn {
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             border: 4px solid #fff;
             background: transparent;
@@ -252,17 +253,17 @@
         }
 
         .record-inner {
-            width: 44px;
-            height: 44px;
+            width: 50px;
+            height: 50px;
             background: var(--primary);
             border-radius: 50%;
             transition: all 0.3s;
         }
 
         .record-btn.recording .record-inner {
-            border-radius: 4px;
-            width: 24px;
-            height: 24px;
+            border-radius: 8px;
+            width: 28px;
+            height: 28px;
             animation: pulse 2s infinite;
         }
         .record-btn.recording { border-color: var(--primary); }
@@ -271,28 +272,30 @@
 
         .time-display {
             font-family: monospace;
-            font-size: 1.2rem;
-            width: 80px;
+            font-size: 1.4rem;
+            width: 90px;
             text-align: center;
+            font-weight: 700;
         }
         
         .title-input {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2);
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 12px 16px;
+            border-radius: 12px;
             color: white;
             font-family: inherit;
             outline: none;
             width: 200px;
+            font-size: 1rem;
         }
         .title-input::placeholder { color: rgba(255,255,255,0.3); }
 
         .style-selector {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             position: absolute;
-            top: -60px;
+            top: -70px;
             left: 50%;
             transform: translateX(-50%);
             width: 100%;
@@ -300,12 +303,13 @@
         }
 
         .style-opt {
-            padding: 8px 16px;
-            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.6);
             border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px;
+            border-radius: 24px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+            font-weight: 600;
             backdrop-filter: blur(4px);
             white-space: nowrap;
         }
@@ -313,39 +317,42 @@
 
         .support-link {
             position: fixed;
-            bottom: 100px; 
+            bottom: 120px; 
             right: 20px;
-            font-size: 0.7rem;
-            color: #444;
+            font-size: 0.8rem;
+            color: #666;
             text-decoration: none;
             pointer-events: auto;
             z-index: 25;
             transition: color 0.2s;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 8px;
         }
         .support-link:hover { color: #fff; }
 
         @media (max-width: 768px) {
-            .header { padding: 10px 15px; }
-            .logo { font-size: 1.2rem; }
+            .header { padding: 15px 20px; }
+            .logo img { height: 40px; }
             .btn span { display: none; }
-            .btn { padding: 10px; }
-            .credit-pill { padding: 6px 10px; font-size: 0.7rem; }
-            .brand-panel, .format-panel { top: 70px; gap: 10px; }
-            .controls { padding: 15px; gap: 10px; }
-            .record-btn { width: 50px; height: 50px; }
-            .record-inner { width: 36px; height: 36px; }
+            .btn { padding: 12px; }
+            .credit-pill { padding: 8px 14px; font-size: 0.8rem; }
+            .brand-panel, .format-panel { top: 90px; gap: 12px; }
+            .controls { padding: 20px 15px 30px 15px; gap: 15px; }
+            .record-btn { width: 64px; height: 64px; }
+            .record-inner { width: 44px; height: 44px; }
             .record-btn.recording .record-inner { width: 20px; height: 20px; }
-            .title-input { width: 120px; font-size: 0.8rem; }
-            .style-opt { padding: 6px 12px; font-size: 0.7rem; }
-            .style-selector { top: -50px; }
-            .support-link { bottom: 90px; right: 10px; }
+            .title-input { width: 140px; font-size: 0.9rem; }
+            .style-opt { padding: 8px 16px; font-size: 0.8rem; }
+            .style-selector { top: -60px; }
+            .support-link { bottom: 110px; right: 15px; }
         }
 
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
             z-index: 100;
             display: flex;
             align-items: center;
@@ -358,13 +365,13 @@
 
         .buy-btn {
             width: 100%;
-            padding: 15px;
+            padding: 16px;
             background: #fff;
             color: #000;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 1.1rem;
             cursor: pointer;
             transition: filter 0.2s;
         }
@@ -373,7 +380,7 @@
         #render-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             z-index: 200;
             display: flex;
             flex-direction: column;
@@ -386,15 +393,15 @@
         #render-overlay.open { opacity: 1; pointer-events: auto; }
         
         .loader {
-            width: 48px;
-            height: 48px;
-            border: 5px solid #FFF;
+            width: 60px;
+            height: 60px;
+            border: 6px solid #FFF;
             border-bottom-color: var(--accent);
             border-radius: 50%;
             display: inline-block;
             box-sizing: border-box;
             animation: rotation 1s linear infinite;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -410,17 +417,17 @@
     <div id="ui-layer">
         <div class="header">
             <div class="logo">
-                <img src="logo.png" alt="SYNA" style="height: 30px;">
+                <img src="logo.png" alt="SYNA">
             </div>
             
             <div class="header-actions">
                 <div class="credit-pill" id="credit-display">
-                    <i data-lucide="zap" size="14"></i>
+                    <i data-lucide="zap" size="16"></i>
                     <span id="credit-count">...</span>
                 </div>
 
                 <button class="btn btn-primary" onclick="document.getElementById('audio-input').click()">
-                    <i data-lucide="music" size="16"></i> <span>Upload</span>
+                    <i data-lucide="music" size="20"></i> <span>Upload</span>
                 </button>
             </div>
             
@@ -431,30 +438,30 @@
 
         <div class="brand-panel">
             <div class="brand-tool" onclick="document.getElementById('logo-input').click()">
-                <i data-lucide="image" size="20"></i>
+                <i data-lucide="image" size="24"></i>
                 <div class="tooltip">Upload Logo</div>
             </div>
             <div class="brand-tool" onclick="document.getElementById('bg-input').click()">
-                <i data-lucide="monitor" size="20"></i>
+                <i data-lucide="monitor" size="24"></i>
                 <div class="tooltip">Set Background</div>
             </div>
             <div class="brand-tool" onclick="app.resetBrand()">
-                <i data-lucide="rotate-ccw" size="20"></i>
+                <i data-lucide="rotate-ccw" size="24"></i>
                 <div class="tooltip">Reset Visuals</div>
             </div>
         </div>
 
         <div class="format-panel">
             <div class="format-btn active" onclick="app.setFormat('9:16', this)">
-                <i data-lucide="smartphone" size="20"></i>
+                <i data-lucide="smartphone" size="24"></i>
                 <div class="tooltip">TikTok</div>
             </div>
             <div class="format-btn" onclick="app.setFormat('1:1', this)">
-                <i data-lucide="square" size="20"></i>
+                <i data-lucide="square" size="24"></i>
                 <div class="tooltip">Post</div>
             </div>
             <div class="format-btn" onclick="app.setFormat('16:9', this)">
-                <i data-lucide="monitor" size="20"></i>
+                <i data-lucide="monitor" size="24"></i>
                 <div class="tooltip">YouTube</div>
             </div>
         </div>
@@ -542,7 +549,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Config ---
+        // --- Firebase Config (PROD) ---
         const firebaseConfig = {
           apiKey: "AIzaSyB06unFPCYmkomvzc-NH8OFPwGmJTupewo",
           authDomain: "syna-app-ce68f.firebaseapp.com",
@@ -563,7 +570,6 @@
         let credits = 0;
         const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-        // --- Auth & Monthly Refill ---
         signInAnonymously(auth).catch(console.error);
 
         onAuthStateChanged(auth, async (user) => {
@@ -590,13 +596,25 @@
                             credits: 3, 
                             joined: Date.now(),
                             lastRefill: Date.now()
+                        }).catch(e => {
+                            if(e.code === 'permission-denied') handlePermError();
                         });
                         credits = 3;
                     }
                     updateUIState();
+                }, (error) => {
+                    if (error.code === 'permission-denied') handlePermError();
                 });
             }
         });
+
+        function handlePermError() {
+             if(!window.hasAlerted) {
+                 alert("DATABASE PERMISSION ERROR:\n\nYour Firebase Security Rules are blocking access.\n\nGo to Firebase Console > Firestore > Rules and change them to allow read/write for authenticated users.");
+                 window.hasAlerted = true;
+                 document.getElementById('credit-count').innerText = "ERR";
+             }
+        }
 
         // --- Audio Engine ---
         let audioCtx, analyser, dataArray, source;
@@ -623,11 +641,11 @@
             dataArray = new Uint8Array(analyser.frequencyBinCount);
         }
 
-        // --- Visual Engine ---
+        // --- Visual Engine (Three.js) ---
         let scene, camera, renderer;
         let bars = [], ring, wave;
         let logoMesh, titleMesh, watermarkMesh;
-        let bgMesh; // For full-cover background
+        let bgMesh; 
         let activeStyle = 'bars';
         let currentFormat = '9:16';
         let titleText = "";
@@ -686,13 +704,13 @@
 
             createTitleMesh("");
             createWatermarkMesh();
-            createBackgroundMesh(); // Setup background plane
+            createBackgroundMesh(); 
 
             handleResize();
             animate();
         }
 
-        // --- Text/Texture Generation ---
+        // --- Text Texture Generation ---
         function createTitleMesh(text) {
             if(titleMesh) scene.remove(titleMesh);
             if(!text) return;
@@ -717,7 +735,7 @@
             const geo = new THREE.PlaneGeometry(20, 5);
             const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
             titleMesh = new THREE.Mesh(geo, mat);
-            titleMesh.position.set(0, 10, 0); 
+            titleMesh.position.set(0, 10, 0); // Above visuals
             scene.add(titleMesh);
         }
         
@@ -743,13 +761,12 @@
             scene.add(watermarkMesh);
         }
 
-        // Smart Background Mesh
         function createBackgroundMesh() {
-            const geo = new THREE.PlaneGeometry(100, 100); // Start big
-            const mat = new THREE.MeshBasicMaterial({ color: 0x050505, depthTest: false }); // Default dark
+            const geo = new THREE.PlaneGeometry(100, 100); 
+            const mat = new THREE.MeshBasicMaterial({ color: 0x050505, depthTest: false }); 
             bgMesh = new THREE.Mesh(geo, mat);
-            bgMesh.position.z = -50; // Far behind
-            bgMesh.renderOrder = -1; // Ensure drawn first
+            bgMesh.position.z = -50; 
+            bgMesh.renderOrder = -1; 
             scene.add(bgMesh);
         }
         
@@ -810,10 +827,8 @@
             renderer.render(scene, camera);
         }
 
-        // --- BRAND KIT ---
         const textureLoader = new THREE.TextureLoader();
 
-        // Logo Upload: SCALED UP
         document.getElementById('logo-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if(!file) return;
@@ -821,37 +836,31 @@
             if(logoMesh) scene.remove(logoMesh);
             textureLoader.load(url, (tex) => {
                 const aspect = tex.image.width / tex.image.height;
-                // BIGGER: Was 4, now 10
                 const geo = new THREE.PlaneGeometry(10 * aspect, 10); 
                 const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
                 logoMesh = new THREE.Mesh(geo, mat);
-                // LOWER: Was 12, now 8 to keep in frame
                 logoMesh.position.set(0, 8, -5);
                 scene.add(logoMesh);
             });
         });
 
-        // Background Upload: SMART COVER
         document.getElementById('bg-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if(!file) return;
             const url = URL.createObjectURL(file);
             
             textureLoader.load(url, (tex) => {
-                // Apply to our specialized BG plane
                 bgMesh.material.map = tex;
-                bgMesh.material.color.set(0xffffff); // Ensure full color
+                bgMesh.material.color.set(0xffffff); 
                 bgMesh.material.needsUpdate = true;
                 
-                // Clear scene bg so we see the mesh
                 scene.background = null;
                 scene.fog = null;
                 
-                handleResize(); // Trigger scale update
+                handleResize(); 
             });
         });
 
-        // --- Recording Logic ---
         let mediaRecorder;
         let chunks = [];
         let isRecording = false;
@@ -883,7 +892,6 @@
 
             resetBrand: () => {
                 if(logoMesh) scene.remove(logoMesh);
-                // Reset BG Mesh
                 bgMesh.material.map = null;
                 bgMesh.material.color.set(0x050505);
                 scene.fog = new THREE.FogExp2(0x050505, 0.02);
@@ -1056,15 +1064,10 @@
             
             updateWatermarkPosition();
             
-            // Update BG Mesh Scale to cover view
             if(bgMesh) {
-                // Approximate visible height at depth 50
-                // H = 2 * tan(fov/2) * dist
-                // dist = 20 (cam) + 50 (bg) = 70
                 const vH = 2 * Math.tan((75/2) * Math.PI/180) * 70;
                 const vW = vH * aspect;
                 
-                // Scale mesh to cover
                 bgMesh.scale.set(vW / 100, vH / 100, 1);
             }
         }
