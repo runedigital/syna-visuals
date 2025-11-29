@@ -422,8 +422,9 @@
             </div>
             
             <div class="header-actions">
-                <div class="credit-pill" id="credit-display" onclick="app.login()" title="Click to Login/Save">
-                    <i data-lucide="user" size="16"></i>
+                <!-- Fixed: Added login trigger -->
+                <div class="credit-pill" id="credit-display" onclick="app.login()" title="Click to Link Account">
+                    <i data-lucide="zap" size="16"></i>
                     <span id="credit-count">...</span>
                 </div>
 
@@ -581,10 +582,8 @@
                     if (snap.exists()) {
                         const data = snap.data();
                         isPro = data.isPro || false;
-                        
                         const lastRefill = data.lastRefill || 0;
                         const now = Date.now();
-                        
                         if (!isPro && (now - lastRefill > THIRTY_DAYS_MS)) {
                             updateDoc(docRef, { credits: 3, lastRefill: now });
                             credits = 3;
@@ -603,16 +602,15 @@
                         credits = 3;
                     }
                     updateUIState();
-
-                    // AUTO-RESUME PAYMENT (Fix for Mobile Redirects)
+                    
+                    // Auto-Resume Payment
                     const pendingPlan = sessionStorage.getItem('pendingPayment');
                     if (pendingPlan) {
                         console.log("Resuming pending payment:", pendingPlan);
-                        sessionStorage.removeItem('pendingPayment'); // Clear it
+                        sessionStorage.removeItem('pendingPayment'); 
                         setTimeout(() => {
-                            // Only trigger if not Pro (avoid double charge if zapier was fast)
                             if (!isPro) app.processPayment(pendingPlan);
-                        }, 1500); // Slight delay to let UI settle
+                        }, 1500); 
                     }
 
                 }, (error) => {
@@ -994,7 +992,9 @@
                     }
                 }
 
-                const btn = document.querySelector(plan === 'monthly' ? '.buy-btn' : '.buy-btn:last-child');
+                // SPECIFIC ID SELECTORS
+                const btnId = plan === 'monthly' ? 'btn-monthly' : 'btn-lifetime';
+                const btn = document.getElementById(btnId);
                 
                 const links = {
                     monthly: "https://buy.stripe.com/dRmbJ1dxrgrU3k9fkc24001", 
@@ -1059,18 +1059,24 @@
             const wmPreview = document.getElementById('watermark-preview');
             const pill = document.getElementById('credit-display');
             const count = document.getElementById('credit-count');
-            const pillIcon = pill.querySelector('i');
+            
+            // FIX: Robustly swap icons
+            const existingIcon = pill.querySelector('i, svg');
+            if(existingIcon) existingIcon.remove();
 
+            const newIcon = document.createElement('i');
+            newIcon.setAttribute('size', '16');
+            
             if (currentUser && !currentUser.isAnonymous) {
-                // Logged in user
-                pillIcon.setAttribute('data-lucide', 'user-check'); 
+                newIcon.setAttribute('data-lucide', 'user-check'); 
                 pill.title = "Account Linked";
             } else {
-                // Anonymous
-                pillIcon.setAttribute('data-lucide', 'user');
+                newIcon.setAttribute('data-lucide', 'zap');
                 pill.title = "Click to Link Account";
             }
-            lucide.createIcons(); // Refresh icons
+            
+            pill.prepend(newIcon);
+            lucide.createIcons();
 
             if(isPro) {
                 wmPreview.style.opacity = '0';
