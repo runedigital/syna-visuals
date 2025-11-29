@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SYNA | Audio Visualizer</title>
+    <meta name="description" content="Turn audio into viral 4K video instantly. The AI visualizer for creators.">
+    
+    <!-- Social Sharing -->
+    <meta property="og:title" content="SYNA | Visuals for Audio">
+    <meta property="og:description" content="Turn audio into viral 4K video instantly.">
+    <meta property="og:image" content="logo.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="logo.png">
     
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -325,6 +334,20 @@
         }
         .style-opt.active { background: #fff; color: #000; border-color: #fff; }
 
+        /* Support Link */
+        .support-link {
+            position: fixed;
+            bottom: 100px; /* Above controls */
+            right: 20px;
+            font-size: 0.7rem;
+            color: #444;
+            text-decoration: none;
+            pointer-events: auto;
+            z-index: 25;
+            transition: color 0.2s;
+        }
+        .support-link:hover { color: #fff; }
+
         /* --- MOBILE FIXES --- */
         @media (max-width: 768px) {
             .header { padding: 10px 15px; }
@@ -345,6 +368,8 @@
             .title-input { width: 120px; font-size: 0.8rem; }
             .style-opt { padding: 6px 12px; font-size: 0.7rem; }
             .style-selector { top: -50px; }
+            
+            .support-link { bottom: 90px; right: 10px; }
         }
 
         /* Modals */
@@ -425,7 +450,6 @@
     <div id="ui-layer">
         <div class="header">
             <div class="logo">
-                <!-- LOGO IMAGE HERE -->
                 <img src="logo.png" alt="SYNA" style="height: 30px;">
             </div>
             
@@ -476,6 +500,9 @@
                 <div class="tooltip">YouTube</div>
             </div>
         </div>
+
+        <!-- Support Link -->
+        <a href="mailto:support@synavisuals.app" class="support-link">Help & Support</a>
 
         <div class="controls">
             <div class="style-selector">
@@ -565,12 +592,21 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Config (REPLACE THESE KEYS BEFORE DEPLOY) ---
-        const firebaseConfig = JSON.parse(__firebase_config || '{}');
+        // --- Firebase Config (PROD) ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyB06unFPCYmkomvzc-NH8OFPwGmJTupewo",
+          authDomain: "syna-app-ce68f.firebaseapp.com",
+          projectId: "syna-app-ce68f",
+          storageBucket: "syna-app-ce68f.firebasestorage.app",
+          messagingSenderId: "1011799412868",
+          appId: "1:1011799412868:web:f90130e6395e9c411a72d1",
+          measurementId: "G-HPQ07669MY"
+        };
+
         const fbApp = initializeApp(firebaseConfig);
         const auth = getAuth(fbApp);
         const db = getFirestore(fbApp);
-        const appId = __app_id || 'default';
+        const appId = 'syna-prod'; // Production ID
 
         let currentUser = null;
         let isPro = false;
@@ -760,6 +796,7 @@
         
         function updateWatermarkPosition() {
             if(!watermarkMesh) return;
+            // Position based on aspect ratio
             if(currentFormat === '9:16') watermarkMesh.position.set(6, -15, 5);
             else if(currentFormat === '1:1') watermarkMesh.position.set(8, -8, 5);
             else watermarkMesh.position.set(12, -6, 5);
@@ -937,7 +974,7 @@
             processPayment: (plan) => {
                 const btn = document.querySelector(plan === 'monthly' ? '.buy-btn' : '.buy-btn:last-child');
                 
-                // --- STRIPE LINKS (Test & Live) ---
+                // --- STRIPE LINKS (LIVE) ---
                 const links = {
                     monthly: "https://buy.stripe.com/dRmbJ1dxrgrU3k9fkc24001", 
                     lifetime: "https://buy.stripe.com/7sY14n8d7cbEcUJ8VO24000"
@@ -1049,5 +1086,4 @@
 
     </script>
 </body>
-
 </html>
