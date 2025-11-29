@@ -581,8 +581,10 @@
                     if (snap.exists()) {
                         const data = snap.data();
                         isPro = data.isPro || false;
+                        
                         const lastRefill = data.lastRefill || 0;
                         const now = Date.now();
+                        
                         if (!isPro && (now - lastRefill > THIRTY_DAYS_MS)) {
                             updateDoc(docRef, { credits: 3, lastRefill: now });
                             credits = 3;
@@ -601,6 +603,18 @@
                         credits = 3;
                     }
                     updateUIState();
+
+                    // AUTO-RESUME PAYMENT (Fix for Mobile Redirects)
+                    const pendingPlan = sessionStorage.getItem('pendingPayment');
+                    if (pendingPlan) {
+                        console.log("Resuming pending payment:", pendingPlan);
+                        sessionStorage.removeItem('pendingPayment'); // Clear it
+                        setTimeout(() => {
+                            // Only trigger if not Pro (avoid double charge if zapier was fast)
+                            if (!isPro) app.processPayment(pendingPlan);
+                        }, 1500); // Slight delay to let UI settle
+                    }
+
                 }, (error) => {
                     if (error.code === 'permission-denied') handlePermError();
                 });
@@ -954,17 +968,24 @@
                 if (currentUser && currentUser.isAnonymous) {
                     const confirm = window.confirm("To save your subscription, you must link a Google Account first.\n\nClick OK to sign in.");
                     if(confirm) {
+                        // SAVE INTENT: Remember what they wanted to buy
+                        sessionStorage.setItem('pendingPayment', plan);
+                        
                         try {
                             // Try to link
                             const result = await linkWithPopup(currentUser, provider);
                             currentUser = result.user;
+                            // If successful without reload, clear intent so we don't double trigger
+                            sessionStorage.removeItem('pendingPayment'); 
                         } catch(e) {
                             // If link fails (e.g. account exists), try regular sign in
                             try {
                                 const result = await signInWithPopup(auth, provider);
                                 currentUser = result.user;
+                                sessionStorage.removeItem('pendingPayment');
                             } catch(err) {
                                 console.error(err);
+                                sessionStorage.removeItem('pendingPayment'); // Clear on error
                                 return; // Stop if login fails
                             }
                         }
@@ -973,9 +994,7 @@
                     }
                 }
 
-                // SPECIFIC ID SELECTORS
-                const btnId = plan === 'monthly' ? 'btn-monthly' : 'btn-lifetime';
-                const btn = document.getElementById(btnId);
+                const btn = document.querySelector(plan === 'monthly' ? '.buy-btn' : '.buy-btn:last-child');
                 
                 const links = {
                     monthly: "https://buy.stripe.com/dRmbJ1dxrgrU3k9fkc24001", 
