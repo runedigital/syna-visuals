@@ -980,8 +980,15 @@
                     lifetime: "https://buy.stripe.com/7sY14n8d7cbEcUJ8VO24000"
                 };
                 
-                const url = links[plan];
+                let url = links[plan];
                 if(!url) return;
+
+                // AUTOMATION HOOK: Pass the Firebase User ID to Stripe
+                // This allows Zapier to know WHICH user to upgrade after payment.
+                if(currentUser && currentUser.uid) {
+                    const separator = url.includes('?') ? '&' : '?';
+                    url = `${url}${separator}client_reference_id=${currentUser.uid}`;
+                }
 
                 btn.innerText = "Redirecting...";
                 setTimeout(() => window.open(url, '_blank'), 500);
