@@ -44,6 +44,7 @@
         #viewport {
             position: relative;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             background: #000;
             overflow: hidden;
             width: 100%;
@@ -118,6 +119,7 @@
             gap: 8px;
             backdrop-filter: blur(10px);
             white-space: nowrap;
+            cursor: pointer;
         }
         
         .credit-pill.gold {
@@ -405,6 +407,24 @@
         }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        .auth-btn-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .google-btn {
+            background: white;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
     </style>
 </head>
 <body>
@@ -421,8 +441,9 @@
             </div>
             
             <div class="header-actions">
-                <div class="credit-pill" id="credit-display">
-                    <i data-lucide="zap" size="16"></i>
+                <!-- Added Login Trigger -->
+                <div class="credit-pill" id="credit-display" onclick="app.login()" title="Click to Login/Save">
+                    <i data-lucide="user" size="16"></i>
                     <span id="credit-count">...</span>
                 </div>
 
@@ -546,7 +567,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -563,6 +584,7 @@
         const auth = getAuth(fbApp);
         const db = getFirestore(fbApp);
         const appId = 'syna-prod';
+        const provider = new GoogleAuthProvider();
 
         let currentUser = null;
         let isPro = false;
@@ -579,10 +601,8 @@
                     if (snap.exists()) {
                         const data = snap.data();
                         isPro = data.isPro || false;
-                        
                         const lastRefill = data.lastRefill || 0;
                         const now = Date.now();
-                        
                         if (!isPro && (now - lastRefill > THIRTY_DAYS_MS)) {
                             updateDoc(docRef, { credits: 3, lastRefill: now });
                             credits = 3;
@@ -671,11 +691,10 @@
             point2.position.set(-10, 5, 10);
             scene.add(point2);
 
-            // 1. Neon Bars
             const barGeo = new THREE.BoxGeometry(0.5, 1, 0.5);
             const barMat = new THREE.MeshStandardMaterial({ 
                 color: 0xffffff, roughness: 0.1, metalness: 0.8, emissive: 0x000000,
-                transparent: true, opacity: 0.9 // Glassmorphism update
+                transparent: true, opacity: 0.9
             });
             for(let i=0; i<64; i++) {
                 const mesh = new THREE.Mesh(barGeo, barMat);
@@ -684,14 +703,12 @@
                 bars.push(mesh);
             }
 
-            // 2. Solar Ring
             const ringGeo = new THREE.TorusGeometry(8, 0.2, 16, 100);
             const ringMat = new THREE.MeshBasicMaterial({ color: 0xFF3B30, wireframe: true, transparent: true, opacity: 0.8 });
             ring = new THREE.Mesh(ringGeo, ringMat);
             ring.visible = false;
             scene.add(ring);
 
-            // 3. Fluid Wave
             const waveGeo = new THREE.PlaneGeometry(40, 40, 32, 32);
             const waveMat = new THREE.MeshBasicMaterial({ color: 0x007AFF, wireframe: true, transparent: true, opacity: 0.8 });
             wave = new THREE.Mesh(waveGeo, waveMat);
@@ -716,10 +733,8 @@
             canvas.width = 1024;
             canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            
             ctx.fillStyle = 'rgba(0,0,0,0)'; 
             ctx.fillRect(0,0, canvas.width, canvas.height);
-            
             ctx.font = 'bold 80px "Space Grotesk", sans-serif';
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
@@ -727,7 +742,6 @@
             ctx.shadowColor = "rgba(0,0,0,0.8)";
             ctx.shadowBlur = 10;
             ctx.fillText(text, canvas.width/2, canvas.height/2);
-
             const tex = new THREE.CanvasTexture(canvas);
             const geo = new THREE.PlaneGeometry(20, 5);
             const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
@@ -749,7 +763,6 @@
             ctx.textBaseline = 'bottom';
             ctx.letterSpacing = '6px';
             ctx.fillText("SYNA", canvas.width - 20, canvas.height - 20);
-            
             const tex = new THREE.CanvasTexture(canvas);
             const geo = new THREE.PlaneGeometry(10, 2.5);
             const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
@@ -776,11 +789,7 @@
 
         function animate() {
             requestAnimationFrame(animate);
-
             if(analyser) analyser.getByteFrequencyData(dataArray);
-
-            // Added slight transparency update logic if needed for effects, kept simple for perf
-            // Position updates
             if (activeStyle === 'bars') {
                 bars.forEach((bar, i) => {
                     bar.visible = true;
@@ -788,7 +797,7 @@
                         const val = dataArray[i] || 0;
                         const scale = (val / 255) * 15 + 0.1;
                         bar.scale.y = scale;
-                        bar.position.y = (scale / 2) - 5; // Move down to clear center stage
+                        bar.position.y = (scale / 2) - 5; 
                         const hue = (i / 64) + (Date.now() * 0.0001);
                         bar.material.color.setHSL(hue % 1, 1, 0.5);
                         bar.material.emissive.setHSL(hue % 1, 1, 0.2);
@@ -807,7 +816,6 @@
                     ring.rotation.z += 0.01;
                     ring.rotation.x += 0.01;
                     ring.material.color.setHSL(bass, 1, 0.5);
-                    // Ring is already centered, maybe lower slightly
                     ring.position.y = -2;
                 }
             }
@@ -822,10 +830,9 @@
                         pos.setZ(i, z);
                     }
                     pos.needsUpdate = true;
-                    wave.position.y = -8; // Lower wave further
+                    wave.position.y = -8; 
                 }
             }
-
             renderer.render(scene, camera);
         }
 
@@ -850,16 +857,12 @@
             const file = e.target.files[0];
             if(!file) return;
             const url = URL.createObjectURL(file);
-            
             textureLoader.load(url, (tex) => {
                 bgMesh.material.map = tex;
-                // Dim the background slightly
                 bgMesh.material.color.setHex(0x999999); 
                 bgMesh.material.needsUpdate = true;
-                
                 scene.background = null;
                 scene.fog = null;
-                
                 handleResize(); 
             });
         });
@@ -898,10 +901,20 @@
                 bgMesh.material.map = null;
                 bgMesh.material.color.set(0x050505);
                 scene.fog = new THREE.FogExp2(0x050505, 0.02);
-                
                 createTitleMesh("");
                 titleText = "";
                 document.querySelector('.title-input').value = "";
+            },
+
+            login: async () => {
+                try {
+                    const result = await signInWithPopup(auth, provider);
+                    currentUser = result.user;
+                    // Auth state change listener handles the rest
+                } catch (e) {
+                    console.error("Login failed", e);
+                    alert("Login failed. Please try again.");
+                }
             },
 
             toggleRecord: () => {
@@ -956,7 +969,30 @@
 
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
             
-            processPayment: (plan) => {
+            processPayment: async (plan) => {
+                // Force Google Login for Anonymous users before payment
+                if (currentUser && currentUser.isAnonymous) {
+                    const confirm = window.confirm("To save your subscription, you must link a Google Account first.\n\nClick OK to sign in.");
+                    if(confirm) {
+                        try {
+                            // Try to link
+                            const result = await linkWithPopup(currentUser, provider);
+                            currentUser = result.user;
+                        } catch(e) {
+                            // If link fails (e.g. account exists), try regular sign in
+                            try {
+                                const result = await signInWithPopup(auth, provider);
+                                currentUser = result.user;
+                            } catch(err) {
+                                console.error(err);
+                                return; // Stop if login fails
+                            }
+                        }
+                    } else {
+                        return; // Stop if user cancels
+                    }
+                }
+
                 const btn = document.querySelector(plan === 'monthly' ? '.buy-btn' : '.buy-btn:last-child');
                 
                 const links = {
@@ -1022,6 +1058,18 @@
             const wmPreview = document.getElementById('watermark-preview');
             const pill = document.getElementById('credit-display');
             const count = document.getElementById('credit-count');
+            const pillIcon = pill.querySelector('i');
+
+            if (currentUser && !currentUser.isAnonymous) {
+                // Logged in user
+                pillIcon.setAttribute('data-lucide', 'user-check'); 
+                pill.title = "Account Linked";
+            } else {
+                // Anonymous
+                pillIcon.setAttribute('data-lucide', 'user');
+                pill.title = "Click to Link Account";
+            }
+            lucide.createIcons(); // Refresh icons
 
             if(isPro) {
                 wmPreview.style.opacity = '0';
@@ -1070,7 +1118,6 @@
             if(bgMesh) {
                 const vH = 2 * Math.tan((75/2) * Math.PI/180) * 70;
                 const vW = vH * aspect;
-                
                 bgMesh.scale.set(vW / 100, vH / 100, 1);
             }
         }
