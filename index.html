@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SYNA | Audio Visualizer</title>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --primary: #FF3B30;
+            --accent: #007AFF;
+            --bg: #050505;
+            --surface: #111;
+            --text: #fff;
+            --border: #333;
+            --gold: #FFD700;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Space Grotesk', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- Canvas Wrapper --- */
+        #viewport {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            background: #000;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- Dynamic Watermark --- */
+        #watermark-preview {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.4);
+            pointer-events: none;
+            z-index: 2;
+            letter-spacing: 6px;
+            transition: opacity 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* --- UI Overlay --- */
+        #ui-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Top Bar */
+        .header {
+            pointer-events: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent);
+            width: 100%;
+            box-sizing: border-box;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 30;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            letter-spacing: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .credit-pill {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            white-space: nowrap;
+        }
+        
+        .credit-pill.gold {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        .btn:hover { background: #222; border-color: #555; }
+        .btn-primary { background: var(--accent); border-color: var(--accent); }
+        .btn-primary:hover { background: #006ce6; }
+
+        /* Hidden Inputs */
+        input[type="file"] { display: none; }
+
+        /* Brand Kit Panel (Left) */
+        .brand-panel {
+            pointer-events: auto;
+            position: fixed;
+            left: 20px;
+            top: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 20;
+        }
+        
+        .brand-tool {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #ccc;
+            backdrop-filter: blur(5px);
+            transition: 0.2s;
+            position: relative;
+        }
+        .brand-tool:hover { background: #fff; color: #000; }
+        
+        /* Format Switcher (Right) */
+        .format-panel {
+            pointer-events: auto;
+            position: fixed;
+            right: 20px;
+            top: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 20;
+        }
+        
+        .format-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #ccc;
+            backdrop-filter: blur(5px);
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .format-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0, 122, 255, 0.1); }
+        .format-btn:hover { border-color: #fff; color: #fff; }
+
+        .tooltip {
+            position: absolute;
+            left: 55px; /* For left panel */
+            background: #000;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .brand-tool:hover .tooltip { opacity: 1; }
+        .format-panel .tooltip { left: auto; right: 55px; }
+        .format-panel .format-btn:hover .tooltip { opacity: 1; }
+
+        /* Bottom Controls */
+        .controls {
+            pointer-events: auto;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 30;
+        }
+
+        .record-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .record-inner {
+            width: 44px;
+            height: 44px;
+            background: var(--primary);
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .record-btn.recording .record-inner {
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            animation: pulse 2s infinite;
+        }
+        .record-btn.recording { border-color: var(--primary); }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .time-display {
+            font-family: monospace;
+            font-size: 1.2rem;
+            width: 80px;
+            text-align: center;
+        }
+        
+        .title-input {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: white;
+            font-family: inherit;
+            outline: none;
+            width: 200px;
+        }
+        .title-input::placeholder { color: rgba(255,255,255,0.3); }
+
+        /* Style Options */
+        .style-selector {
+            display: flex;
+            gap: 10px;
+            position: absolute;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            justify-content: center;
+        }
+
+        .style-opt {
+            padding: 8px 16px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            backdrop-filter: blur(4px);
+            white-space: nowrap;
+        }
+        .style-opt.active { background: #fff; color: #000; border-color: #fff; }
+
+        /* --- MOBILE FIXES --- */
+        @media (max-width: 768px) {
+            .header { padding: 10px 15px; }
+            .logo { font-size: 1.2rem; }
+            
+            .btn span { display: none; }
+            .btn { padding: 10px; }
+            
+            .credit-pill { padding: 6px 10px; font-size: 0.7rem; }
+            
+            .brand-panel, .format-panel { top: 70px; gap: 10px; }
+            
+            .controls { padding: 15px; gap: 10px; }
+            .record-btn { width: 50px; height: 50px; }
+            .record-inner { width: 36px; height: 36px; }
+            .record-btn.recording .record-inner { width: 20px; height: 20px; }
+            
+            .title-input { width: 120px; font-size: 0.8rem; }
+            .style-opt { padding: 6px 12px; font-size: 0.7rem; }
+            .style-selector { top: -50px; }
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+        /* Payment Modal Specifics */
+        .buy-btn {
+            width: 100%;
+            padding: 15px;
+            background: #fff;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: filter 0.2s;
+        }
+        .buy-btn:hover { filter: brightness(0.9); }
+
+        /* Render Overlay */
+        #render-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        #render-overlay.open { opacity: 1; pointer-events: auto; }
+        
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: var(--accent);
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <!-- Canvas Wrapper -->
+    <div id="viewport" style="width: 100%; height: 100%;">
+        <div id="canvas-container"></div>
+        
+        <!-- Preview Watermark (HTML - Only for UI) -->
+        <div id="watermark-preview">
+            <i data-lucide="waves" size="24"></i> SYNA
+        </div>
+    </div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div class="header">
+            <div class="logo">
+                <!-- LOGO IMAGE HERE -->
+                <img src="logo.png" alt="SYNA" style="height: 30px;">
+            </div>
+            
+            <div class="header-actions">
+                <div class="credit-pill" id="credit-display">
+                    <i data-lucide="zap" size="14"></i>
+                    <span id="credit-count">...</span>
+                </div>
+
+                <button class="btn btn-primary" onclick="document.getElementById('audio-input').click()">
+                    <i data-lucide="music" size="16"></i> <span>Upload</span>
+                </button>
+            </div>
+            
+            <input type="file" id="audio-input" accept="audio/*">
+            <input type="file" id="logo-input" accept="image/png, image/jpeg">
+            <input type="file" id="bg-input" accept="image/*">
+        </div>
+
+        <!-- Brand Kit -->
+        <div class="brand-panel">
+            <div class="brand-tool" onclick="document.getElementById('logo-input').click()">
+                <i data-lucide="image" size="20"></i>
+                <div class="tooltip">Upload Logo</div>
+            </div>
+            <div class="brand-tool" onclick="document.getElementById('bg-input').click()">
+                <i data-lucide="monitor" size="20"></i>
+                <div class="tooltip">Set Background</div>
+            </div>
+            <div class="brand-tool" onclick="app.resetBrand()">
+                <i data-lucide="rotate-ccw" size="20"></i>
+                <div class="tooltip">Reset Visuals</div>
+            </div>
+        </div>
+
+        <!-- Format Switcher -->
+        <div class="format-panel">
+            <div class="format-btn active" onclick="app.setFormat('9:16', this)">
+                <i data-lucide="smartphone" size="20"></i>
+                <div class="tooltip">TikTok</div>
+            </div>
+            <div class="format-btn" onclick="app.setFormat('1:1', this)">
+                <i data-lucide="square" size="20"></i>
+                <div class="tooltip">Post</div>
+            </div>
+            <div class="format-btn" onclick="app.setFormat('16:9', this)">
+                <i data-lucide="monitor" size="20"></i>
+                <div class="tooltip">YouTube</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="style-selector">
+                <div class="style-opt active" onclick="app.setStyle('bars')">Neon Bars</div>
+                <div class="style-opt" onclick="app.setStyle('ring')">Solar Ring</div>
+                <div class="style-opt" onclick="app.setStyle('wave')">Fluid Wave</div>
+            </div>
+
+            <input type="text" class="title-input" placeholder="Title..." oninput="app.setTitle(this.value)">
+
+            <div class="time-display" id="timer">00:00</div>
+            
+            <button class="record-btn" id="rec-btn" onclick="app.toggleRecord()">
+                <div class="record-inner"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Payment Modal (2 Tier) -->
+    <div class="modal-overlay" id="pay-modal">
+        <div class="modal-card" style="background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 40px; width: 600px; max-width: 95%;">
+            <div style="display: flex; justify-content: flex-end;">
+                <button onclick="app.closeModal('pay-modal')" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
+            </div>
+            <h2 id="modal-title" style="margin-bottom: 5px; color: #fff; text-align:center;">Unlock SYNA Pro</h2>
+            <p style="color: #888; margin-bottom: 30px; text-align:center;" id="modal-msg">Choose your access level.</p>
+            
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+                
+                <!-- Monthly Tier -->
+                <div style="flex: 1; min-width: 200px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid #333;">
+                    <div style="font-size: 0.9rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Monthly</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; margin: 10px 0; color: #fff;">$19 <span style="font-size: 0.9rem; color: #666;">/mo</span></div>
+                    <ul style="text-align: left; list-style: none; padding: 0; font-size: 0.8rem; color: #888; margin-bottom: 20px;">
+                        <li style="margin-bottom: 8px;">✓ 4K Ultra HD Export</li>
+                        <li style="margin-bottom: 8px;">✓ No Watermark</li>
+                        <li>✓ Cancel Anytime</li>
+                    </ul>
+                    <button class="buy-btn" onclick="app.processPayment('monthly')" style="margin-top: auto;">Subscribe</button>
+                </div>
+
+                <!-- Lifetime Tier (Highlighted) -->
+                <div style="flex: 1; min-width: 200px; background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), rgba(0,0,0,0)); padding: 20px; border-radius: 12px; border: 1px solid var(--gold); position: relative;">
+                    <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--gold); color: black; padding: 4px 12px; border-radius: 12px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase;">Best Value</div>
+                    <div style="font-size: 0.9rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px;">Founding Member</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; margin: 10px 0; color: #fff;">$69 <span style="font-size: 0.9rem; color: #666;">/once</span></div>
+                    <ul style="text-align: left; list-style: none; padding: 0; font-size: 0.8rem; color: #ddd; margin-bottom: 20px;">
+                        <li style="margin-bottom: 8px;">✓ <b>Lifetime Access</b></li>
+                        <li style="margin-bottom: 8px;">✓ All Pro Features</li>
+                        <li>✓ Future Updates Included</li>
+                    </ul>
+                    <button class="buy-btn" onclick="app.processPayment('lifetime')" style="background: var(--gold); color: black;">Get Lifetime Access</button>
+                </div>
+
+            </div>
+            <div style="margin-top: 20px; font-size: 0.7rem; color: #444; text-align:center;">Secured by Stripe • 100% Money Back Guarantee</div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal-overlay" id="success-modal">
+        <div class="modal-card" style="background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 40px; width: 400px; text-align: center;">
+            <div style="display: flex; justify-content: flex-end;">
+                <button onclick="app.closeModal('success-modal')" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
+            </div>
+            <h2 style="color: var(--gold);">Download Complete!</h2>
+            <p style="color: #aaa; margin-bottom: 30px;">Your visualizer has been saved to your device.</p>
+            
+            <div style="padding: 20px; background: #222; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin:0; font-size: 0.9rem;">Remaining Credits</p>
+                <div style="font-size: 2rem; font-weight: 700; color: #fff;" id="success-credit-count">2</div>
+            </div>
+
+            <button class="buy-btn" onclick="app.closeModal('success-modal')" style="background: #333; color: #fff;">Create Another</button>
+        </div>
+    </div>
+
+    <!-- Render Overlay -->
+    <div id="render-overlay">
+        <div class="loader"></div>
+        <div style="font-size: 1.2rem; font-weight: 700; letter-spacing: 2px;">SYNTHESIZING</div>
+        <div style="color: #888; margin-top: 10px;">Please wait...</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Config (REPLACE THESE KEYS BEFORE DEPLOY) ---
+        const firebaseConfig = JSON.parse(__firebase_config || '{}');
+        const fbApp = initializeApp(firebaseConfig);
+        const auth = getAuth(fbApp);
+        const db = getFirestore(fbApp);
+        const appId = __app_id || 'default';
+
+        let currentUser = null;
+        let isPro = false;
+        let credits = 0;
+        const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+        // --- Auth & Monthly Refill ---
+        signInAnonymously(auth).catch(console.error);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'syna', 'sub');
+                onSnapshot(docRef, (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        isPro = data.isPro || false;
+                        
+                        const lastRefill = data.lastRefill || 0;
+                        const now = Date.now();
+                        
+                        if (!isPro && (now - lastRefill > THIRTY_DAYS_MS)) {
+                            updateDoc(docRef, { credits: 3, lastRefill: now });
+                            credits = 3;
+                        } else {
+                            credits = (data.credits !== undefined) ? data.credits : 3;
+                        }
+                    } else {
+                        setDoc(docRef, { 
+                            isPro: false, 
+                            credits: 3, 
+                            joined: Date.now(),
+                            lastRefill: Date.now()
+                        });
+                        credits = 3;
+                    }
+                    updateUIState();
+                });
+            }
+        });
+
+        // --- Audio Engine ---
+        let audioCtx, analyser, dataArray, source;
+        let audioEl = new Audio();
+        audioEl.crossOrigin = "anonymous";
+        audioEl.loop = true;
+
+        document.getElementById('audio-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            audioEl.src = url;
+            if(!audioCtx) initAudio();
+            audioEl.play();
+        });
+
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            source = audioCtx.createMediaElementSource(audioEl);
+            source.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            analyser.fftSize = 256;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        }
+
+        // --- Visual Engine (Three.js) ---
+        let scene, camera, renderer;
+        let bars = [], ring, wave;
+        let logoMesh, titleMesh, watermarkMesh;
+        let activeStyle = 'bars';
+        let currentFormat = '9:16';
+        let titleText = "";
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            camera.position.set(0, 5, 20);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.1);
+            scene.add(ambient);
+            
+            const point = new THREE.PointLight(0x007AFF, 1, 100);
+            point.position.set(10, 10, 10);
+            scene.add(point);
+            
+            const point2 = new THREE.PointLight(0xFF3B30, 1, 100);
+            point2.position.set(-10, 5, 10);
+            scene.add(point2);
+
+            // 1. Neon Bars
+            const barGeo = new THREE.BoxGeometry(0.5, 1, 0.5);
+            const barMat = new THREE.MeshStandardMaterial({ 
+                color: 0xffffff, roughness: 0.1, metalness: 0.8, emissive: 0x000000 
+            });
+            for(let i=0; i<64; i++) {
+                const mesh = new THREE.Mesh(barGeo, barMat);
+                mesh.position.x = (i - 32) * 0.8;
+                scene.add(mesh);
+                bars.push(mesh);
+            }
+
+            // 2. Solar Ring
+            const ringGeo = new THREE.TorusGeometry(8, 0.2, 16, 100);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xFF3B30, wireframe: true });
+            ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.visible = false;
+            scene.add(ring);
+
+            // 3. Fluid Wave
+            const waveGeo = new THREE.PlaneGeometry(40, 40, 32, 32);
+            const waveMat = new THREE.MeshBasicMaterial({ color: 0x007AFF, wireframe: true });
+            wave = new THREE.Mesh(waveGeo, waveMat);
+            wave.rotation.x = -Math.PI / 2;
+            wave.position.y = -5;
+            wave.visible = false;
+            scene.add(wave);
+
+            // Create 3D Title Mesh (Hidden initially)
+            createTitleMesh("");
+            
+            // Create 3D Watermark Mesh
+            createWatermarkMesh();
+
+            handleResize();
+            animate();
+        }
+
+        // --- Text Texture Generation ---
+        function createTitleMesh(text) {
+            if(titleMesh) scene.remove(titleMesh);
+            if(!text) return;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = 'rgba(0,0,0,0)'; 
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            
+            ctx.font = 'bold 80px "Space Grotesk", sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = "rgba(0,0,0,0.8)";
+            ctx.shadowBlur = 10;
+            ctx.fillText(text, canvas.width/2, canvas.height/2);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const geo = new THREE.PlaneGeometry(20, 5);
+            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+            titleMesh = new THREE.Mesh(geo, mat);
+            titleMesh.position.set(0, 10, 0); // Above visuals
+            scene.add(titleMesh);
+        }
+        
+        function createWatermarkMesh() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            ctx.font = 'bold 50px "Space Grotesk", sans-serif'; 
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.letterSpacing = '6px';
+            ctx.fillText("SYNA", canvas.width - 20, canvas.height - 20);
+            
+            const tex = new THREE.CanvasTexture(canvas);
+            const geo = new THREE.PlaneGeometry(10, 2.5);
+            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+            watermarkMesh = new THREE.Mesh(geo, mat);
+            watermarkMesh.visible = false; 
+            scene.add(watermarkMesh);
+        }
+        
+        function updateWatermarkPosition() {
+            if(!watermarkMesh) return;
+            if(currentFormat === '9:16') watermarkMesh.position.set(6, -15, 5);
+            else if(currentFormat === '1:1') watermarkMesh.position.set(8, -8, 5);
+            else watermarkMesh.position.set(12, -6, 5);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if(analyser) analyser.getByteFrequencyData(dataArray);
+
+            if (activeStyle === 'bars') {
+                bars.forEach((bar, i) => {
+                    bar.visible = true;
+                    if(dataArray) {
+                        const val = dataArray[i] || 0;
+                        const scale = (val / 255) * 15 + 0.1;
+                        bar.scale.y = scale;
+                        bar.position.y = scale / 2;
+                        const hue = (i / 64) + (Date.now() * 0.0001);
+                        bar.material.color.setHSL(hue % 1, 1, 0.5);
+                        bar.material.emissive.setHSL(hue % 1, 1, 0.2);
+                    }
+                });
+                ring.visible = false;
+                wave.visible = false;
+            } 
+            else if (activeStyle === 'ring') {
+                bars.forEach(b => b.visible = false);
+                ring.visible = true;
+                wave.visible = false;
+                if(dataArray) {
+                    const bass = dataArray[0] / 255;
+                    ring.scale.setScalar(1 + bass * 0.5);
+                    ring.rotation.z += 0.01;
+                    ring.rotation.x += 0.01;
+                    ring.material.color.setHSL(bass, 1, 0.5);
+                }
+            }
+            else if (activeStyle === 'wave') {
+                bars.forEach(b => b.visible = false);
+                ring.visible = false;
+                wave.visible = true;
+                if(dataArray) {
+                    const pos = wave.geometry.attributes.position;
+                    for(let i=0; i<pos.count; i++) {
+                        const z = Math.sin(i + Date.now()*0.005) * (dataArray[i%64]/50);
+                        pos.setZ(i, z);
+                    }
+                    pos.needsUpdate = true;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // --- BRAND KIT & TOOLS ---
+        const textureLoader = new THREE.TextureLoader();
+
+        document.getElementById('logo-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const url = URL.createObjectURL(file);
+            if(logoMesh) scene.remove(logoMesh);
+            textureLoader.load(url, (tex) => {
+                const aspect = tex.image.width / tex.image.height;
+                const geo = new THREE.PlaneGeometry(4 * aspect, 4);
+                const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+                logoMesh = new THREE.Mesh(geo, mat);
+                logoMesh.position.set(0, 12, -5);
+                scene.add(logoMesh);
+            });
+        });
+
+        document.getElementById('bg-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const url = URL.createObjectURL(file);
+            textureLoader.load(url, (tex) => {
+                scene.background = tex;
+                scene.fog = null;
+            });
+        });
+
+        // --- Recording Logic ---
+        let mediaRecorder;
+        let chunks = [];
+        let isRecording = false;
+        let startTime, timerInterval;
+        let usingCredit = false;
+
+        window.app = {
+            setStyle: (style) => {
+                activeStyle = style;
+                document.querySelectorAll('.style-opt').forEach(el => el.classList.remove('active'));
+                const opts = document.querySelectorAll('.style-opt');
+                if(style === 'bars') opts[0].classList.add('active');
+                if(style === 'ring') opts[1].classList.add('active');
+                if(style === 'wave') opts[2].classList.add('active');
+            },
+            
+            setTitle: (val) => {
+                titleText = val;
+                createTitleMesh(val);
+            },
+            
+            setFormat: (format, btn) => {
+                currentFormat = format;
+                document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                handleResize();
+                updateWatermarkPosition();
+            },
+
+            resetBrand: () => {
+                if(logoMesh) scene.remove(logoMesh);
+                scene.background = new THREE.Color(0x050505);
+                scene.fog = new THREE.FogExp2(0x050505, 0.02);
+                createTitleMesh("");
+                titleText = "";
+                document.querySelector('.title-input').value = "";
+            },
+
+            toggleRecord: () => {
+                if(!audioCtx) { alert("Please upload audio first."); return; }
+
+                if(isRecording) {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    document.getElementById('rec-btn').classList.remove('recording');
+                    document.getElementById('render-overlay').classList.add('open');
+                    clearInterval(timerInterval);
+                } else {
+                    updateWatermarkPosition();
+                    if (isPro) {
+                        watermarkMesh.visible = false;
+                        usingCredit = false;
+                    } else if (credits > 0) {
+                        watermarkMesh.visible = false;
+                        usingCredit = true;
+                    } else {
+                        watermarkMesh.visible = true;
+                        usingCredit = false;
+                    }
+
+                    const stream = document.querySelector('canvas').captureStream(30);
+                    const dest = audioCtx.createMediaStreamDestination();
+                    source.connect(dest);
+                    const audioTrack = dest.stream.getAudioTracks()[0];
+                    stream.addTrack(audioTrack);
+
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+                    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+                    mediaRecorder.onstop = saveVideo;
+                    mediaRecorder.start();
+                    
+                    isRecording = true;
+                    document.getElementById('rec-btn').classList.add('recording');
+                    
+                    startTime = Date.now();
+                    timerInterval = setInterval(() => {
+                        const diff = Math.floor((Date.now() - startTime) / 1000);
+                        const m = Math.floor(diff / 60).toString().padStart(2, '0');
+                        const s = (diff % 60).toString().padStart(2, '0');
+                        document.getElementById('timer').innerText = `${m}:${s}`;
+                    }, 1000);
+                    
+                    audioEl.onended = () => { if(isRecording) app.toggleRecord(); };
+                    audioEl.currentTime = 0;
+                    audioEl.play();
+                }
+            },
+
+            closeModal: (id) => document.getElementById(id).classList.remove('open'),
+            
+            processPayment: (plan) => {
+                const btn = document.querySelector(plan === 'monthly' ? '.buy-btn' : '.buy-btn:last-child');
+                
+                // --- STRIPE LINKS (Test & Live) ---
+                const links = {
+                    monthly: "https://buy.stripe.com/test_28E5kD3RV5zN4UveAvbfO00", 
+                    lifetime: "https://buy.stripe.com/test_cNi00jewz2nB3QreAvbfO01"
+                };
+                
+                const url = links[plan];
+                if(!url) return;
+
+                btn.innerText = "Redirecting...";
+                setTimeout(() => window.open(url, '_blank'), 500);
+            }
+        };
+
+        async function saveVideo() {
+            watermarkMesh.visible = false;
+            document.getElementById('render-overlay').classList.remove('open');
+            
+            if (usingCredit) {
+                try {
+                    credits--;
+                    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'syna', 'sub');
+                    await updateDoc(docRef, { credits: credits });
+                    updateUIState();
+                } catch(e) { console.error(e); }
+            }
+
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            chunks = [];
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `syna_${currentFormat.replace(':','-')}_${Date.now()}.webm`;
+            a.click();
+            
+            document.getElementById('success-modal').classList.add('open');
+            document.getElementById('success-credit-count').innerText = isPro ? "∞" : credits;
+            
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#FF3B30', '#007AFF', '#FFD700']
+            });
+
+            if(!isPro && credits === 0) {
+                setTimeout(() => { 
+                    app.closeModal('success-modal');
+                    document.getElementById('modal-title').innerText = "Credits Depleted";
+                    document.getElementById('modal-msg').innerText = "You've used all free monthly videos.";
+                    document.getElementById('pay-modal').classList.add('open'); 
+                }, 2000);
+            }
+        }
+
+        function updateUIState() {
+            const wmPreview = document.getElementById('watermark-preview');
+            const pill = document.getElementById('credit-display');
+            const count = document.getElementById('credit-count');
+
+            if(isPro) {
+                wmPreview.style.opacity = '0';
+                pill.classList.add('gold');
+                count.innerText = "UNLIMITED";
+            } else {
+                wmPreview.style.opacity = '1';
+                pill.classList.remove('gold');
+                count.innerText = `${credits} LEFT`;
+            }
+        }
+
+        function handleResize() {
+            if (!camera || !renderer) return;
+
+            const viewport = document.getElementById('viewport');
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+            
+            let aspect = 9/16; 
+            if (currentFormat === '1:1') aspect = 1;
+            if (currentFormat === '16:9') aspect = 16/9;
+
+            let finalW, finalH;
+            
+            if (winW / winH > aspect) {
+                finalH = winH;
+                finalW = winH * aspect;
+            } else {
+                finalW = winW;
+                finalH = winW / aspect;
+            }
+
+            viewport.style.width = `${finalW}px`;
+            viewport.style.height = `${finalH}px`;
+
+            camera.aspect = aspect;
+            camera.updateProjectionMatrix();
+            renderer.setSize(finalW, finalH);
+            
+            if(aspect < 1) camera.position.z = 25; 
+            else camera.position.z = 20;
+            
+            updateWatermarkPosition();
+        }
+
+        window.addEventListener('resize', handleResize);
+
+        init3D();
+        lucide.createIcons();
+
+    </script>
+</body>
+</html>
