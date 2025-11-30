@@ -10,8 +10,9 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
-    <meta name="description" content="Turn audio into viral 4K video instantly. The AI visualizer for creators.">
+    <meta name="description" content="Turn audio into viral video instantly. The AI visualizer for creators.">
     <meta property="og:title" content="SYNA | Visuals for Audio">
+    <meta property="og:description" content="Turn audio into viral video instantly.">
     <meta property="og:image" content="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
     
@@ -25,7 +26,7 @@
         :root { --primary: #FF3B30; --accent: #007AFF; --bg: #050505; --surface: #111; --text: #fff; --border: #333; --gold: #FFD700; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; overflow: hidden; }
         #viewport { position: relative; width: 100%; height: 100%; overflow: hidden; background: #000; }
-        #canvas-container { width: 100%; height: 100%; }
+        #canvas-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         #watermark-preview { position: absolute; bottom: 30px; right: 30px; font-size: 1.5rem; font-weight: 700; color: rgba(255,255,255,0.4); pointer-events: none; z-index: 2; letter-spacing: 6px; transition: opacity 0.3s; display: flex; align-items: center; gap: 10px; }
         #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; }
         .header { pointer-events: auto; display: flex; justify-content: space-between; align-items: center; padding: 20px; background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent); }
@@ -136,11 +137,21 @@
                 <div style="flex:1; background:rgba(255,255,255,0.05); padding:15px; border-radius:10px;">
                     <h3>Monthly</h3>
                     <div style="font-size:1.5rem; font-weight:700;">$19</div>
+                    <ul style="text-align: left; list-style: none; padding: 0; font-size: 0.8rem; color: #888; margin-bottom: 20px; margin-top:10px;">
+                        <li style="margin-bottom: 8px;">✓ High Res Export</li>
+                        <li style="margin-bottom: 8px;">✓ No Watermark</li>
+                        <li>✓ Cancel Anytime</li>
+                    </ul>
                     <button class="buy-btn" onclick="app.pay('monthly')">Subscribe</button>
                 </div>
                 <div style="flex:1; background:linear-gradient(45deg, #FFD700 0%, #FFA500 100%); padding:15px; border-radius:10px; color:black;">
                     <h3>Lifetime</h3>
                     <div style="font-size:1.5rem; font-weight:700;">$69</div>
+                    <ul style="text-align: left; list-style: none; padding: 0; font-size: 0.8rem; color: #333; margin-bottom: 20px; margin-top:10px;">
+                        <li style="margin-bottom: 8px;">✓ <b>Lifetime Access</b></li>
+                        <li style="margin-bottom: 8px;">✓ High Res Export</li>
+                        <li>✓ Future Updates Included</li>
+                    </ul>
                     <button class="buy-btn" style="background:black; color:white;" onclick="app.pay('lifetime')">Get Forever</button>
                 </div>
             </div>
@@ -477,10 +488,6 @@
                         document.getElementById('pay-modal').classList.add('open');
                         return;
                     }
-                    
-                    updateWatermarkPosition();
-                    watermarkMesh.visible = !isPro;
-
                     const stream = document.querySelector('canvas').captureStream(30);
                     const dest = audioCtx.createMediaStreamDestination();
                     source.connect(dest);
@@ -507,18 +514,16 @@
         };
 
         async function saveVideo() {
-            watermarkMesh.visible = false;
             if(chunks.length === 0) { 
                 document.getElementById('render-overlay').classList.remove('open'); 
                 return; 
             }
             
-            // DEDUCT CREDIT - Simplified for reliability
+            // DEDUCT CREDIT
             if(!isPro) {
                 try {
                     credits--;
                     updateUI();
-                    // UPDATED PATH: Writing to user root now
                     await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid), { credits: credits });
                 } catch(e) { console.error("Credit fail", e); }
             }
