@@ -697,6 +697,15 @@
         let currentFormat = '9:16';
         let titleText = "";
         const textureLoader = new THREE.TextureLoader();
+        
+        // --- MEDIA RECORDER GLOBALS (CRITICAL FIX) ---
+        window.isRecording = false;
+        window.mediaRecorder = null;
+        window.chunks = [];
+        window.startTime = 0;
+        window.timerInterval = null;
+        window.usingCredit = false;
+
 
         // --- AUDIO EVENT LISTENERS ---
         document.getElementById('audio-input').addEventListener('change', function(e) {
@@ -890,17 +899,32 @@
         }
 
         function saveVideo() {
-            let usingCredit = false; // Placeholder
-            let isPro = false; // Placeholder
-            let credits = 3; // Placeholder
-
-            document.getElementById('render-overlay').classList.remove('open');
-            
-            if (usingCredit) {
-                // ... (Update Firestore logic) ...
+            // Check if recording actually produced data
+            if (window.chunks.length === 0) {
+                document.getElementById('render-overlay').classList.remove('open');
+                alert("Recording failed or audio was too short.");
+                return;
             }
 
-            const blob = new Blob([], { type: 'video/webm' }); // Simplified blob creation
+            // The rest of your saving logic remains here
+            let isPro = false; // Placeholder
+            let credits = 3; // Placeholder
+            
+            document.getElementById('render-overlay').classList.remove('open');
+            
+            if (window.usingCredit) {
+                // *** CREDIT DEDUCTION LOGIC RESTORED ***
+                try {
+                    credits--;
+                    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'syna', 'sub');
+                    updateDoc(docRef, { credits: credits });
+                    updateUIState();
+                } catch(e) { console.error("Failed to deduct credit from Firestore:", e); }
+            }
+
+            const blob = new Blob(window.chunks, { type: 'video/webm' }); 
+            window.chunks = []; // Clear chunks
+            
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1090,7 +1114,6 @@
 
                 let canvas = document.querySelector('canvas');
                 if (!canvas) {
-                    // Should not happen if 3D init is fixed, but as a safety net:
                     alert("3D canvas not initialized. Please try refreshing.");
                     return;
                 }
@@ -1164,7 +1187,8 @@
         window.timerInterval = null;
         window.usingCredit = false;
 
-        init3D();
+        // CRITICAL: Call 3D init after everything is defined
+        init3D(); 
         lucide.createIcons();
 
     </script>
