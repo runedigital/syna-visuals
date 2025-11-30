@@ -170,17 +170,25 @@
         let activeStyle = 'bars', currentFormat = '9:16';
         let bgTexture = null;
 
-        // --- AUTH LOGIC ---
+ // --- AUTH LOGIC ---
         
-        // 1. Check for Redirect Result (Coming back from Google)
-        getRedirectResult(auth).then((result) => {
-            if(result) console.log("Redirect Login Success:", result.user.uid);
-        }).catch((error) => console.error("Redirect Error:", error));
+        // 1. Check for Redirect Result (Priority)
+        getRedirectResult(auth)
+            .then((result) => {
+                if (result) {
+                    console.log("✅ REDIRECT SUCCESS:", result.user.uid);
+                    // The state change listener below will handle the UI update
+                }
+            })
+            .catch((error) => {
+                console.error("Redirect Error:", error);
+            });
 
         // 2. Monitor Auth State
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
+                console.log("User Active:", user.uid);
                 
                 // Sync Credits
                 onSnapshot(doc(db, 'customers', user.uid), (snap) => {
@@ -195,11 +203,12 @@
                     updateUI();
                 });
             } else {
-                // No user? Become a Ghost.
-                signInAnonymously(auth).catch(console.error);
+                // DO NOT AUTO-CREATE GHOST HERE.
+                // Wait for the user to click something.
+                console.log("No user logged in. Waiting...");
+                updateUI(); // Updates UI to show "Log In" or "..."
             }
         });
-
         window.app = {
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
             
@@ -261,9 +270,20 @@
                     bgTexture = null;
                 }
             },
-            toggleRecord: () => {
+toggleRecord: () => {
                 if(!audioCtx) { alert("Upload Audio First"); return; }
+                
+                // LAZY GHOST: If no user, create one now
+                if (!currentUser) {
+                    signInAnonymously(auth).then(() => {
+                        // Once ghost is made, re-run the record logic
+                        app.toggleRecord();
+                    });
+                    return;
+                }
+
                 if(isRecording) {
+                    // ... (Existing stop logic) ...
                     mediaRecorder.stop(); isRecording=false;
                     document.getElementById('rec-btn').classList.remove('recording');
                     clearInterval(timerInterval);
@@ -272,6 +292,7 @@
                 } else {
                     if(!isPro && credits <= 0) { document.getElementById('pay-modal').classList.add('open'); return; }
                     
+                    // ... (Existing start logic) ...
                     const stream = document.querySelector('canvas').captureStream(30);
                     const dest = audioCtx.createMediaStreamDestination();
                     source.connect(dest);
@@ -295,7 +316,6 @@
                     audioEl.currentTime=0; audioEl.play();
                 }
             }
-        };
 
         // --- SELF HEALING DATABASE ---
         async function saveVideo() {
