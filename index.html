@@ -5,14 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SYNA | Audio Visualizer</title>
     
+    <!-- Cache Control Headers -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
+    <meta name="description" content="Turn audio into viral HD video instantly. The AI visualizer for creators.">
     <meta property="og:title" content="SYNA | Visuals for Audio">
+    <meta property="og:description" content="Turn audio into viral HD video instantly.">
     <meta property="og:image" content="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
     
+    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
@@ -22,18 +26,20 @@
         :root { --primary: #FF3B30; --accent: #007AFF; --bg: #050505; --surface: #111; --text: #fff; --border: #333; --gold: #FFD700; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; overflow: hidden; }
         
-        /* Full Screen Layout */
-        #viewport { position: absolute; inset: 0; width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+        /* Layout - Fixed for Full Screen */
+        #viewport { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
         #canvas-container { width: 100%; height: 100%; display: block; }
         
         #watermark-preview { position: absolute; bottom: 140px; right: 30px; font-size: 1.5rem; font-weight: 700; color: rgba(255,255,255,0.3); pointer-events: none; z-index: 2; letter-spacing: 4px; transition: opacity 0.3s; }
         
         #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; }
         
+        /* Header */
         .header { pointer-events: auto; display: flex; justify-content: space-between; align-items: center; padding: 20px; background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent); }
         .logo img { height: 40px; display: block; }
         .header-actions { display: flex; gap: 10px; align-items: center; }
         
+        /* Components */
         .credit-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; cursor: pointer; backdrop-filter: blur(10px); }
         .credit-pill.gold { border-color: var(--gold); color: var(--gold); background: rgba(255, 215, 0, 0.15); }
         
@@ -41,6 +47,7 @@
         .btn:hover { background: #222; }
         .btn-primary { background: var(--accent); border-color: var(--accent); }
         
+        /* Panels */
         .brand-panel { pointer-events: auto; position: fixed; left: 20px; top: 90px; display: flex; flex-direction: column; gap: 15px; }
         .format-panel { pointer-events: auto; position: fixed; right: 20px; top: 90px; display: flex; flex-direction: column; gap: 15px; }
         
@@ -53,6 +60,7 @@
         .format-panel .tooltip { left: auto; right: 60px; }
         .icon-btn:hover .tooltip { opacity: 1; }
 
+        /* Controls */
         .controls { pointer-events: auto; background: var(--surface); border-top: 1px solid var(--border); padding: 20px; display: flex; gap: 20px; align-items: center; justify-content: center; position: fixed; bottom: 0; left: 0; width: 100%; box-sizing: border-box; padding-bottom: 40px; }
         
         .record-btn { width: 64px; height: 64px; border-radius: 50%; border: 4px solid #fff; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
@@ -68,12 +76,13 @@
         .title-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; color: white; outline: none; width: 150px; font-size: 0.9rem; }
         .time-display { font-family: monospace; font-size: 1.2rem; width: 80px; text-align: center; font-weight: 700; }
 
+        /* Overlays */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.open { opacity: 1; pointer-events: auto; }
         .modal-card { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 30px; width: 500px; max-width: 90%; text-align: center; }
         .buy-btn { width: 100%; padding: 14px; background: #fff; color: #000; border: none; border-radius: 10px; font-weight: 700; margin-top: 15px; cursor: pointer; }
+        .buy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .google-btn { background: white; color: #333; border: 1px solid #ddd; padding: 10px 20px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
-        
         #render-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
         #render-overlay.open { opacity: 1; pointer-events: auto; }
         .loader { width: 60px; height: 60px; border: 6px solid #FFF; border-bottom-color: var(--accent); border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; margin-bottom: 25px; }
@@ -128,8 +137,6 @@
             </div>
         </div>
 
-        <a href="mailto:support@synavisuals.app" class="support-link">Help & Support</a>
-
         <div class="controls">
             <div class="style-selector">
                 <div class="style-opt active" onclick="app.setStyle('bars')">Neon Bars</div>
@@ -153,12 +160,12 @@
                 <div style="flex:1; background:rgba(255,255,255,0.05); padding:15px; border-radius:10px;">
                     <h3>Monthly</h3>
                     <div style="font-size:1.5rem; font-weight:700;">$19</div>
-                    <button class="buy-btn" onclick="app.pay('monthly')">Subscribe</button>
+                    <button class="buy-btn" id="btn-monthly" onclick="app.pay('monthly')">Subscribe</button>
                 </div>
                 <div style="flex:1; background:linear-gradient(45deg, #FFD700 0%, #FFA500 100%); padding:15px; border-radius:10px; color:black;">
                     <h3>Lifetime</h3>
                     <div style="font-size:1.5rem; font-weight:700;">$69</div>
-                    <button class="buy-btn" style="background:black; color:white;" onclick="app.pay('lifetime')">Get Forever</button>
+                    <button class="buy-btn" id="btn-lifetime" style="background:black; color:white;" onclick="app.pay('lifetime')">Get Forever</button>
                 </div>
             </div>
             <button onclick="window.location.reload()" style="margin-top:20px; background:transparent; border:1px solid #444; color:#666; padding:8px 15px; border-radius:8px; cursor:pointer; font-size:0.8rem;">Already paid? Refresh Status</button>
@@ -199,8 +206,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBALS ---
         const firebaseConfig = {
@@ -232,43 +239,40 @@
         let titleText = "";
 
         // --- AUTH & DATA ---
+        // Attempt anonymous first
         signInAnonymously(auth).catch(console.error);
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                // Use root document for simpler Zapier matching
+                // CHANGED PATH: Looking at 'users/{uid}' directly
                 const docRef = doc(db, 'artifacts', appId, 'users', user.uid);
                 
+                // Enable buttons inside this callback once auth is confirmed
+                const mBtn = document.getElementById('btn-monthly');
+                const lBtn = document.getElementById('btn-lifetime');
+                if(mBtn) mBtn.disabled = false;
+                if(lBtn) lBtn.disabled = false;
+
                 onSnapshot(docRef, async (snap) => {
                     if (snap.exists()) {
                         const data = snap.data();
                         isPro = data.isPro || false;
-                        
-                        // Credit Logic: Only refill if LESS than 3 and NOT Pro
-                        const lastRefill = data.lastRefill || 0;
-                        const now = Date.now();
-                        const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
-                        
-                        let currentCredits = (data.credits !== undefined) ? data.credits : 3;
-                        
-                        if (isPro) {
-                            credits = 999; // Infinite for pro
-                        } else {
-                            // Refill only if 30 days passed OR if data is corrupted/missing
-                            if (now - lastRefill > THIRTY_DAYS) {
-                                updateDoc(docRef, { credits: 3, lastRefill: now });
-                                credits = 3;
-                            } else {
-                                credits = currentCredits;
-                            }
-                        }
+                        if (isPro) credits = 999;
+                        else credits = (data.credits !== undefined) ? data.credits : 3;
                     } else {
-                        // New User: Create document
-                        await setDoc(docRef, { isPro: false, credits: 3, joined: Date.now(), lastRefill: Date.now() }, { merge: true });
+                        // Initialize new user
+                        await setDoc(docRef, { isPro: false, credits: 3, joined: Date.now() }, { merge: true });
                         credits = 3;
                     }
                     updateUI();
+                    
+                    // Resume payment if pending
+                    const pending = sessionStorage.getItem('pendingPlan');
+                    if(pending && !isPro && !user.isAnonymous) {
+                        sessionStorage.removeItem('pendingPlan');
+                        window.app.pay(pending);
+                    }
                 });
             } else {
                 signInAnonymously(auth);
@@ -281,13 +285,11 @@
             scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x050505, 0.02);
             
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-            // Move camera to ensure centering (Z=25 covers more area)
-            camera.position.set(0, 0, 25); 
+            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            camera.position.set(0, 5, 20);
             
             renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setSize(window.innerWidth, window.innerHeight);
             container.appendChild(renderer.domElement);
 
             // Lights
@@ -295,7 +297,7 @@
             const p1 = new THREE.PointLight(0x007AFF, 1, 100); p1.position.set(10,10,10); scene.add(p1);
             const p2 = new THREE.PointLight(0xFF3B30, 1, 100); p2.position.set(-10,5,10); scene.add(p2);
 
-            // Objects (Centered at Y=0)
+            // Objects
             const barMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.8, emissive: 0x000000 });
             for(let i=0; i<64; i++) {
                 const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1, 0.5), barMat);
@@ -308,8 +310,7 @@
             ring.visible = false; scene.add(ring);
 
             wave = new THREE.Mesh(new THREE.PlaneGeometry(40, 40, 32, 32), new THREE.MeshBasicMaterial({ color: 0x007AFF, wireframe: true }));
-            wave.rotation.x = -Math.PI/2; wave.position.y = -2; // Centered lower
-            wave.visible = false; scene.add(wave);
+            wave.rotation.x = -Math.PI/2; wave.position.y = -5; wave.visible = false; scene.add(wave);
 
             createBgMesh();
             createWatermarkMesh();
@@ -328,8 +329,9 @@
                     const val = dataArray ? dataArray[i] : 0;
                     const s = (val/255)*15 + 0.1;
                     b.scale.y = s;
-                    b.position.y = (s/2) - 4; // Centered offset
+                    b.position.y = (s/2)-5;
                     
+                    // Color sync
                     const hue = (i/64) + (Date.now()*0.0001);
                     b.material.color.setHSL(hue%1, 1, 0.5);
                     b.material.emissive.setHSL(hue%1, 1, 0.2);
@@ -369,6 +371,7 @@
         }
 
         function createWatermarkMesh() {
+            // Canvas text for watermark
             const canvas = document.createElement('canvas'); canvas.width=512; canvas.height=128;
             const ctx = canvas.getContext('2d');
             ctx.font = 'bold 40px "Space Grotesk"'; ctx.fillStyle = 'rgba(255,255,255,0.4)';
@@ -451,10 +454,7 @@
             setStyle: (s) => {
                 activeStyle = s;
                 document.querySelectorAll('.style-opt').forEach(el => el.classList.remove('active'));
-                const opts = document.querySelectorAll('.style-opt');
-                if(s === 'bars') opts[0].classList.add('active');
-                if(s === 'ring') opts[1].classList.add('active');
-                if(s === 'wave') opts[2].classList.add('active');
+                // logic to highlight active button
             },
             setFormat: (fmt, btn) => {
                 currentFormat = fmt;
@@ -484,6 +484,7 @@
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
             pay: (plan) => {
                 if(currentUser.isAnonymous) {
+                    sessionStorage.setItem('pendingPlan', plan);
                     document.getElementById('pay-modal').classList.remove('open');
                     document.getElementById('auth-modal').classList.add('open');
                     return;
@@ -574,9 +575,9 @@
             const aspect = currentFormat === '9:16' ? 9/16 : (currentFormat === '1:1' ? 1 : 16/9);
             const h = window.innerHeight;
             const w = h * aspect; 
-            
-            // Centering Logic
+            // Simple fit logic
             if (w > window.innerWidth) {
+               // fit to width
                renderer.setSize(window.innerWidth, window.innerWidth / aspect);
             } else {
                renderer.setSize(w, h);
