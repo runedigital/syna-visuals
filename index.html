@@ -170,14 +170,17 @@
         let activeStyle = 'bars', currentFormat = '9:16';
         let bgTexture = null;
 
-        // --- AUTH LOGIC (No Auto-Ghost) ---
+        // --- AUTH LOGIC (Bulletproof) ---
         
-        getRedirectResult(auth)
-            .then((result) => {
-                if (result) console.log("Redirect Login Success:", result.user.uid);
-            })
-            .catch((error) => console.error("Redirect Error:", error));
+        // 1. Check for Redirect (PC Login Return)
+        getRedirectResult(auth).then((result) => {
+            if(result) {
+                console.log("Redirect Login Success:", result.user.uid);
+                sessionStorage.removeItem('isSigningIn'); // Clear flag
+            }
+        }).catch((error) => console.error("Redirect Error:", error));
 
+        // 2. Monitor Auth State
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
@@ -194,8 +197,12 @@
                     updateUI();
                 });
             } else {
-                // DO NOT Create Ghost Here. Wait for action.
-                updateUI();
+                // 3. AUTO-GHOST (Unless we are in the middle of a redirect)
+                if (!sessionStorage.getItem('isSigningIn')) {
+                    signInAnonymously(auth).catch(console.error);
+                } else {
+                    console.log("Waiting for Google Redirect...");
+                }
             }
         });
 
@@ -207,12 +214,17 @@
                 document.getElementById('auth-modal').classList.add('open');
             },
             
+            // --- LOGIN SWITCH ---
             linkAccount: async () => {
                 try {
+                    // Set flag so Auto-Ghost doesn't kill us on reload
+                    sessionStorage.setItem('isSigningIn', 'true');
+                    
                     await auth.signOut(); 
                     await signInWithRedirect(auth, provider); 
                 } catch (e) { 
                     console.error(e); 
+                    sessionStorage.removeItem('isSigningIn'); // Clear flag on error
                     alert("Login Error: " + e.message); 
                 }
             },
@@ -262,11 +274,10 @@
             toggleRecord: () => {
                 if(!audioCtx) { alert("Upload Audio First"); return; }
                 
-                // LAZY GHOST: Only create user if recording starts and no one is logged in
+                // If ghost creation failed, force it now (Last Resort)
                 if (!currentUser) {
-                    signInAnonymously(auth).then(() => {
-                        app.toggleRecord();
-                    });
+                    alert("Initializing... Click again.");
+                    signInAnonymously(auth);
                     return;
                 }
 
@@ -336,17 +347,8 @@
         function updateUI() {
             const count = document.getElementById('credit-count');
             const pill = document.getElementById('credit-display');
-            
-            if(isPro) { 
-                count.innerText = "UNLIMITED"; 
-                pill.classList.add('gold'); 
-            } else if (currentUser) { 
-                count.innerText = `${credits} LEFT`; 
-                pill.classList.remove('gold'); 
-            } else {
-                count.innerText = "LOG IN"; 
-                pill.classList.remove('gold'); 
-            }
+            if(isPro) { count.innerText = "UNLIMITED"; pill.classList.add('gold'); }
+            else { count.innerText = `${credits} LEFT`; pill.classList.remove('gold'); }
             lucide.createIcons();
         }
 
