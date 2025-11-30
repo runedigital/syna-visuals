@@ -195,31 +195,25 @@
                 if(currentUser.isAnonymous) document.getElementById('auth-modal').classList.add('open');
                 else document.getElementById('pay-modal').classList.add('open');
             },
-            linkAccount: async () => {
+                        linkAccount: async () => {
                 try {
-                    if(currentUser.isAnonymous) await linkWithPopup(currentUser, provider);
-                    else await signInWithPopup(auth, provider);
+                    // 1. FORCE SIGN OUT FIRST (Kill the Ghost)
+                    await auth.signOut();
+                    
+                    // 2. FORCE SIGN IN (Fresh Login)
+                    await signInWithPopup(auth, provider);
+                    
+                    // 3. CLOSE MODALS
                     document.getElementById('auth-modal').classList.remove('open');
                     document.getElementById('pay-modal').classList.add('open');
-                } catch (e) { if(e.code === 'auth/credential-already-in-use') await signInWithPopup(auth, provider); }
-            },
-            checkout: async (plan) => {
-                if(!currentUser) return;
-                document.getElementById('pay-modal').classList.remove('open');
-                document.getElementById('render-overlay').classList.add('open');
-                document.getElementById('loader-text').innerText = "REDIRECTING...";
-                try {
-                    const docRef = await addDoc(collection(db, 'customers', currentUser.uid, 'checkout_sessions'), {
-                        price: PRICES[plan],
-                        success_url: window.location.href,
-                        cancel_url: window.location.href,
-                    });
-                    onSnapshot(docRef, (snap) => {
-                        const { url, error } = snap.data();
-                        if(error) { alert(error.message); document.getElementById('render-overlay').classList.remove('open'); }
-                        if(url) window.location.assign(url);
-                    });
-                } catch (e) { console.error(e); alert("Error starting checkout"); }
+                    
+                    // 4. RELOAD TO UPDATE UI (Safety Refresh)
+                    window.location.reload();
+                    
+                } catch (e) {
+                    console.error("Login Error:", e);
+                    alert("Login failed. Please try again.");
+                }
             },
 
             // --- CONTROLS ---
