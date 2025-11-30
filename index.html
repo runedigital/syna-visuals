@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SYNA | Audio Visualizer</title>
     
-    <!-- Cache Control Headers (CRITICAL) -->
+    <!-- Cache Control Headers -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -16,11 +16,11 @@
     <meta property="og:image" content="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
     
-    <!-- External Libraries with Cache Buster -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js?v=1.0.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js?v=1.0.0"></script>
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js?v=1.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js?v=1.0.1"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest?v=1.0.0"></script>
+    <script src="https://unpkg.com/lucide@latest?v=1.0.1"></script>
     
     <style>
         :root {
@@ -385,6 +385,19 @@
         }
         .buy-btn:hover { filter: brightness(0.9); }
 
+        .check-status-btn {
+            margin-top: 15px;
+            background: transparent;
+            border: 1px solid #444;
+            color: #888;
+            width: 100%;
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .check-status-btn:hover { color: #fff; border-color: #666; }
+
         #render-overlay {
             position: fixed;
             inset: 0;
@@ -440,18 +453,18 @@
         <div id="watermark-preview"><i data-lucide="waves" size="24"></i> SYNA</div>
     </div>
     
-    <!-- Authentication Wall -->
+    <!-- Authentication Wall (Only for Pay Trigger) -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-card" style="background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 40px; width: 400px; max-width: 90%; text-align: center;">
-            <h2 style="color: #fff;">Start Creating</h2>
-            <p style="color: #aaa; margin-bottom: 30px;">Sign in to save your progress, unlock 3 free videos, and secure your purchases.</p>
+            <h2 style="color: #fff;">Save Your Account</h2>
+            <p style="color: #aaa; margin-bottom: 30px;">To upgrade, you need to link a Google account so we can save your purchase.</p>
             <button class="google-btn" onclick="app.login()">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo-google-icon.png" alt="Google logo" style="width: 20px; height: 20px;">
                 Sign in with Google
             </button>
+            <button onclick="app.closeModal('auth-modal')" style="margin-top: 15px; background: transparent; border: none; color: #666; cursor: pointer;">Cancel</button>
         </div>
     </div>
-
 
     <div id="ui-layer">
         <div class="header">
@@ -557,6 +570,7 @@
                     <button class="buy-btn" id="buy-lifetime" onclick="app.processPayment('lifetime')" style="background: var(--gold); color: black;">Get Lifetime Access</button>
                 </div>
             </div>
+            <button class="check-status-btn" onclick="window.location.reload()">Already paid? Click to refresh status</button>
             <div style="margin-top: 20px; font-size: 0.7rem; color: #444; text-align:center;">Secured by Stripe • 100% Money Back Guarantee</div>
         </div>
     </div>
@@ -586,7 +600,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Expose auth globally for debugging
@@ -651,10 +665,12 @@
                     authReady = true;
                     updateUIState();
 
-                    // Resume payment after successful login (legacy check)
-                    if (pendingPlan && !isPro) {
+                    // Resume payment logic (Simplified: Just clear the pending flag if user is Pro now)
+                    if (pendingPlan) {
                         sessionStorage.removeItem('pendingPayment');
-                        document.getElementById('pay-modal').classList.add('open');
+                        if (!isPro) {
+                             document.getElementById('pay-modal').classList.add('open');
+                        }
                     }
 
                 }, (error) => {
@@ -663,10 +679,15 @@
             } else {
                 authReady = true;
                 updateUIState();
-                // If Anonymous sign-in fails, show the Auth Wall
+                // If not logged in, show the auth wall (but only if Anonymous sign-in failed)
                 if(!auth.currentUser) {
                     setTimeout(() => { // Small delay to prevent immediate DOM error
-                        document.getElementById('auth-modal').classList.add('open');
+                        // Try anonymous again just in case
+                        signInAnonymously(auth).catch(e => {
+                             // If anonymous fails (likely), user must sign in manually
+                             // But we don't force the modal immediately to allow 'browse' mode if possible
+                             // Instead, interactions will trigger auth
+                        });
                     }, 500);
                 }
             }
@@ -674,14 +695,12 @@
 
         // Try to sign in anonymously first.
         signInAnonymously(auth).catch((error) => {
-            // New logic: If Anonymous sign-in fails due to security block, 
-            // the Auth Wall will appear via the onAuthStateChanged listener above.
-            console.error("Anonymous Sign-in failed (likely domain restriction):", error);
+            console.error("Anonymous Sign-in failed:", error);
         });
 
         function handlePermError() {
              if(!window.hasAlerted) {
-                 console.error("DATABASE PERMISSION ERROR: Firebase Security Rules are blocking access. Must allow read/write for authenticated users.");
+                 console.error("DATABASE PERMISSION ERROR");
                  window.hasAlerted = true;
                  document.getElementById('credit-count').innerText = "ERR";
              }
@@ -1133,13 +1152,16 @@
 
                 // Send the stable Google UID as the client_reference_id
                 const uid = currentUser.uid;
+                // Use specific Stripe URL parameter for prefilling hidden fields if configured,
+                // but client_reference_id is standard.
+                // NOTE: We use window.location.href to redirect in the SAME TAB to prevent popup blockers/loss of context on mobile.
                 const separator = url.includes('?') ? '&' : '?';
                 url = `${url}${separator}client_reference_id=${uid}`;
                 
                 btn.innerText = "Redirecting...";
 
                 // Redirect to Stripe
-                window.open(url, '_blank');
+                window.location.href = url;
             },
             
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
