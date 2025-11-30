@@ -1083,13 +1083,87 @@
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
             
             toggleRecord: () => {
-                // Placeholder
+                if(!audioCtx) { 
+                    alert("Please upload audio first."); 
+                    return; 
+                }
+
+                let canvas = document.querySelector('canvas');
+                if (!canvas) {
+                    // Should not happen if 3D init is fixed, but as a safety net:
+                    alert("3D canvas not initialized. Please try refreshing.");
+                    return;
+                }
+                
+                if(window.isRecording) {
+                    // STOP RECORDING
+                    window.mediaRecorder.stop();
+                    window.isRecording = false;
+                    document.getElementById('rec-btn').classList.remove('recording');
+                    document.getElementById('render-overlay').classList.add('open');
+                    clearInterval(window.timerInterval);
+                } else {
+                    // START RECORDING
+                    
+                    // Logic to show/hide watermark based on credits/pro status
+                    updateWatermarkPosition();
+                    let usingCredit = !isPro && credits > 0;
+                    watermarkMesh.visible = !isPro && credits <= 0;
+                    window.usingCredit = usingCredit;
+                    
+                    // Capture Video Stream from Canvas
+                    const stream = canvas.captureStream(30);
+                    
+                    // Capture Audio Stream
+                    const dest = audioCtx.createMediaStreamDestination();
+                    if (source) source.connect(dest);
+                    const audioTrack = dest.stream.getAudioTracks()[0];
+                    stream.addTrack(audioTrack); // Merge audio into video stream
+
+                    window.mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+                    window.chunks = [];
+                    window.mediaRecorder.ondataavailable = (e) => { 
+                        if (e.data.size > 0) window.chunks.push(e.data); 
+                    };
+                    window.mediaRecorder.onstop = saveVideo;
+                    window.mediaRecorder.start();
+                    
+                    window.isRecording = true;
+                    document.getElementById('rec-btn').classList.add('recording');
+                    
+                    // Start Timer
+                    window.startTime = Date.now();
+                    window.timerInterval = setInterval(() => {
+                        const diff = Math.floor((Date.now() - window.startTime) / 1000);
+                        const m = Math.floor(diff / 60).toString().padStart(2, '0');
+                        const s = (diff % 60).toString().padStart(2, '0');
+                        document.getElementById('timer').innerText = `${m}:${s}`;
+                    }, 1000);
+                    
+                    // Start audio playback
+                    audioEl.currentTime = 0;
+                    audioEl.play();
+
+                    // Auto-stop if audio ends
+                    audioEl.onended = () => { 
+                        if(window.isRecording) window.app.toggleRecord(); 
+                    };
+                }
             }
         };
 
 
         // --- Final Initialization ---
         window.addEventListener('resize', handleResize);
+        
+        // Safety: Ensure all variables needed for recording are initialized
+        window.isRecording = false;
+        window.mediaRecorder = null;
+        window.chunks = [];
+        window.startTime = 0;
+        window.timerInterval = null;
+        window.usingCredit = false;
+
         init3D();
         lucide.createIcons();
 
