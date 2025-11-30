@@ -12,7 +12,6 @@
     
     <meta name="description" content="Turn audio into viral video instantly. The AI visualizer for creators.">
     <meta property="og:title" content="SYNA | Visuals for Audio">
-    <meta property="og:description" content="Turn audio into viral video instantly.">
     <meta property="og:image" content="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
     
@@ -137,25 +136,14 @@
                 <div style="flex:1; background:rgba(255,255,255,0.05); padding:15px; border-radius:10px;">
                     <h3>Monthly</h3>
                     <div style="font-size:1.5rem; font-weight:700;">$19</div>
-                    <ul style="text-align: left; list-style: none; padding: 0; font-size: 0.8rem; color: #888; margin-bottom: 20px; margin-top:10px;">
-                        <li style="margin-bottom: 8px;">✓ High Res Export</li>
-                        <li style="margin-bottom: 8px;">✓ No Watermark</li>
-                        <li>✓ Cancel Anytime</li>
-                    </ul>
                     <button class="buy-btn" onclick="app.pay('monthly')">Subscribe</button>
                 </div>
                 <div style="flex:1; background:linear-gradient(45deg, #FFD700 0%, #FFA500 100%); padding:15px; border-radius:10px; color:black;">
                     <h3>Lifetime</h3>
                     <div style="font-size:1.5rem; font-weight:700;">$69</div>
-                    <ul style="text-align: left; list-style: none; padding: 0; font-size: 0.8rem; color: #333; margin-bottom: 20px; margin-top:10px;">
-                        <li style="margin-bottom: 8px;">✓ <b>Lifetime Access</b></li>
-                        <li style="margin-bottom: 8px;">✓ High Res Export</li>
-                        <li>✓ Future Updates Included</li>
-                    </ul>
                     <button class="buy-btn" style="background:black; color:white;" onclick="app.pay('lifetime')">Get Forever</button>
                 </div>
             </div>
-            <!-- NEW: Status Check Button -->
             <button onclick="window.location.reload()" style="margin-top:20px; background:transparent; border:1px solid #444; color:#666; padding:8px 15px; border-radius:8px; cursor:pointer; font-size:0.8rem;">Already paid? Refresh Status</button>
         </div>
     </div>
@@ -195,7 +183,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBALS ---
         const firebaseConfig = {
@@ -227,29 +215,29 @@
         let titleText = "";
 
         // --- AUTH & DATA ---
-        // The Critical Fix: Storing data on the USER DOC directly, not a subcollection
+        // Attempt anonymous first
         signInAnonymously(auth).catch(console.error);
 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                // CHANGED PATH: Looking at 'users/{uid}' directly
+                // Path: users/{uid}
                 const docRef = doc(db, 'artifacts', appId, 'users', user.uid);
                 
-                onSnapshot(docRef, (snap) => {
+                onSnapshot(docRef, async (snap) => {
                     if (snap.exists()) {
                         const data = snap.data();
                         isPro = data.isPro || false;
                         if (isPro) credits = 999;
                         else credits = (data.credits !== undefined) ? data.credits : 3;
                     } else {
-                        // Initialize new user
-                        setDoc(docRef, { isPro: false, credits: 3, joined: Date.now() });
+                        // Create new document (merge to avoid overwriting if exists but empty)
+                        await setDoc(docRef, { isPro: false, credits: 3, joined: Date.now() }, { merge: true });
                         credits = 3;
                     }
                     updateUI();
                     
-                    // Resume payment if pending
+                    // Check for pending payment AFTER auth settles
                     const pending = sessionStorage.getItem('pendingPlan');
                     if(pending && !isPro && !user.isAnonymous) {
                         sessionStorage.removeItem('pendingPlan');
@@ -297,7 +285,7 @@
             createBgMesh();
             createWatermarkMesh();
             createTitleMesh("");
-            handleResize();
+            handleResize(); // FORCE RESIZE ON INIT
             animate();
         }
 
@@ -524,6 +512,7 @@
                 try {
                     credits--;
                     updateUI();
+                    // UPDATED PATH: Writing to user root now
                     await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid), { credits: credits });
                 } catch(e) { console.error("Credit fail", e); }
             }
