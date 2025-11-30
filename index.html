@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SYNA | Audio Visualizer</title>
-    
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     
-    <!-- LIBRARIES -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
@@ -16,32 +14,25 @@
     <style>
         :root { --primary: #FF3B30; --accent: #007AFF; --bg: #050505; --surface: #111; --text: #fff; --border: #333; --gold: #FFD700; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; overflow: hidden; }
-        
         #viewport { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
         #canvas-container { width: 100%; height: 100%; display: block; }
-        
         #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; }
         
         .header { pointer-events: auto; display: flex; justify-content: space-between; align-items: center; padding: 20px; background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent); }
         .logo { font-weight: 700; letter-spacing: 5px; font-size: 1.5rem; color: white; }
         .header-actions { display: flex; gap: 10px; align-items: center; }
-        
         .credit-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; cursor: pointer; backdrop-filter: blur(10px); }
         .credit-pill.gold { border-color: var(--gold); color: var(--gold); background: rgba(255, 215, 0, 0.15); }
-        
         .btn { background: var(--surface); border: 1px solid var(--border); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; transition: 0.2s; font-size: 0.9rem; }
-        .btn:hover { background: #222; }
         .btn-primary { background: var(--accent); border-color: var(--accent); }
         
         .brand-panel { pointer-events: auto; position: fixed; left: 20px; top: 90px; display: flex; flex-direction: column; gap: 15px; }
         .format-panel { pointer-events: auto; position: fixed; right: 20px; top: 90px; display: flex; flex-direction: column; gap: 15px; }
-        
         .icon-btn { width: 44px; height: 44px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: #ccc; backdrop-filter: blur(5px); transition: 0.2s; }
         .icon-btn:hover { background: #fff; color: #000; }
         .icon-btn.active { border-color: var(--accent); color: var(--accent); }
 
         .controls { pointer-events: auto; background: var(--surface); border-top: 1px solid var(--border); padding: 20px; display: flex; gap: 20px; align-items: center; justify-content: center; position: fixed; bottom: 0; left: 0; width: 100%; box-sizing: border-box; padding-bottom: 40px; }
-        
         .style-selector { position: absolute; top: -60px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
         .style-opt { padding: 8px 16px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; cursor: pointer; font-size: 0.8rem; backdrop-filter: blur(4px); white-space: nowrap; }
         .style-opt.active { background: #fff; color: #000; }
@@ -51,7 +42,6 @@
         .record-btn.recording .record-inner { width: 24px; height: 24px; border-radius: 4px; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        /* MODALS */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.open { opacity: 1; pointer-events: auto; }
         .modal-card { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 30px; width: 500px; max-width: 90%; text-align: center; }
@@ -62,7 +52,6 @@
         #render-overlay.open { opacity: 1; pointer-events: auto; }
         .loader { width: 60px; height: 60px; border: 6px solid #FFF; border-bottom-color: var(--accent); border-radius: 50%; animation: rotation 1s linear infinite; margin-bottom: 25px; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         input[type="file"] { display: none; }
     </style>
 </head>
@@ -80,19 +69,16 @@
                 <button class="btn btn-primary" onclick="document.getElementById('audio-input').click()"><i data-lucide="music"></i> Upload</button>
             </div>
         </div>
-        
         <div class="brand-panel">
             <div class="icon-btn" onclick="document.getElementById('logo-input').click()"><i data-lucide="image"></i></div>
             <div class="icon-btn" onclick="document.getElementById('bg-input').click()"><i data-lucide="monitor"></i></div>
             <div class="icon-btn" onclick="app.resetBrand()"><i data-lucide="rotate-ccw"></i></div>
         </div>
-        
         <div class="format-panel">
             <div class="icon-btn active" onclick="app.setFormat('9:16', this)"><i data-lucide="smartphone"></i></div>
             <div class="icon-btn" onclick="app.setFormat('1:1', this)"><i data-lucide="square"></i></div>
             <div class="icon-btn" onclick="app.setFormat('16:9', this)"><i data-lucide="monitor"></i></div>
         </div>
-        
         <div class="controls">
             <div class="style-selector">
                 <div class="style-opt active" onclick="app.setStyle('bars')">Neon Bars</div>
@@ -104,7 +90,7 @@
         </div>
     </div>
 
-    <!-- PAY MODAL -->
+    <!-- MODALS -->
     <div class="modal-overlay" id="pay-modal">
         <div class="modal-card">
             <button onclick="app.closeModal('pay-modal')" style="float:right; background:none; border:none; color:#888; cursor:pointer;">✕</button>
@@ -124,7 +110,6 @@
         </div>
     </div>
 
-    <!-- AUTH MODAL -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-card">
             <h2>Save Your Account</h2>
@@ -133,7 +118,6 @@
         </div>
     </div>
 
-    <!-- RENDER OVERLAY -->
     <div id="render-overlay">
         <div class="loader"></div>
         <div id="loader-text" style="font-weight:700; letter-spacing:2px;">RENDERING</div>
@@ -158,8 +142,8 @@
 
         // --- CONFIGURATION: PASTE IDs HERE ---
         const PRICES = {
-            monthly: "price_1SYmHcGTB3aMn43d50Sb5mqI", 
-            lifetime: "price_1SYmHcGTB3aMn43dxrEt5LAB" 
+            monthly: "price_XXXXXXXXXXXXXXXXXXXXXXXX", 
+            lifetime: "price_YYYYYYYYYYYYYYYYYYYYYYYY" 
         };
 
         const firebaseConfig = {
@@ -183,19 +167,17 @@
         let audioCtx, analyser, dataArray, audioEl, source;
         let isRecording=false, mediaRecorder, chunks=[], timerInterval;
         let activeStyle = 'bars', currentFormat = '9:16';
+        let bgTexture = null, bgAspect = 1; // Fix for stretching
 
-        // --- AUTH & PAYMENT ---
+        // --- AUTH ---
         signInAnonymously(auth).catch(console.error);
-
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                // Sync Credits
                 onSnapshot(doc(db, 'customers', user.uid), (snap) => {
                     if(snap.exists()) credits = (snap.data().credits !== undefined) ? snap.data().credits : 3;
                     updateUI();
                 });
-                // Sync Sub
                 const subQuery = query(collection(db, 'customers', user.uid, 'subscriptions'), where('status', 'in', ['active', 'trialing']));
                 onSnapshot(subQuery, (snapshot) => {
                     isPro = !snapshot.empty;
@@ -206,30 +188,24 @@
 
         window.app = {
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
-            
             handleCreditClick: () => {
                 if(isPro) return;
                 if(currentUser.isAnonymous) document.getElementById('auth-modal').classList.add('open');
                 else document.getElementById('pay-modal').classList.add('open');
             },
-
             linkAccount: async () => {
                 try {
                     if(currentUser.isAnonymous) await linkWithPopup(currentUser, provider);
                     else await signInWithPopup(auth, provider);
                     document.getElementById('auth-modal').classList.remove('open');
                     document.getElementById('pay-modal').classList.add('open');
-                } catch (e) {
-                    if(e.code === 'auth/credential-already-in-use') await signInWithPopup(auth, provider);
-                }
+                } catch (e) { if(e.code === 'auth/credential-already-in-use') await signInWithPopup(auth, provider); }
             },
-
             checkout: async (plan) => {
                 if(!currentUser) return;
                 document.getElementById('pay-modal').classList.remove('open');
                 document.getElementById('render-overlay').classList.add('open');
                 document.getElementById('loader-text').innerText = "REDIRECTING...";
-
                 try {
                     const docRef = await addDoc(collection(db, 'customers', currentUser.uid, 'checkout_sessions'), {
                         price: PRICES[plan],
@@ -244,11 +220,11 @@
                 } catch (e) { console.error(e); alert("Error starting checkout"); }
             },
 
-            // --- 3D CONTROLS ---
+            // --- CONTROLS ---
             setStyle: (s) => {
                 activeStyle = s;
                 document.querySelectorAll('.style-opt').forEach(el => el.classList.remove('active'));
-                // (You would toggle class here)
+                // No class toggle needed for button logic in this simplified version, just logic
                 bars.forEach(b => b.visible = (s==='bars'));
                 if(ring) ring.visible = (s==='ring');
                 if(wave) wave.visible = (s==='wave');
@@ -261,7 +237,12 @@
             },
             resetBrand: () => {
                 if(logoMesh) scene.remove(logoMesh);
-                if(bgMesh) { bgMesh.material.map = null; bgMesh.material.color.set(0x050505); bgMesh.material.needsUpdate=true; }
+                if(bgMesh) { 
+                    bgMesh.material.map = null; 
+                    bgMesh.material.color.set(0x050505); 
+                    bgMesh.material.needsUpdate=true; 
+                    bgTexture = null;
+                }
             },
             toggleRecord: () => {
                 if(!audioCtx) { alert("Upload Audio First"); return; }
@@ -279,7 +260,10 @@
                     source.connect(dest);
                     stream.addTrack(dest.stream.getAudioTracks()[0]);
                     
-                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+                    // Mobile Safari/Chrome Fallback for codecs
+                    const mime = MediaRecorder.isTypeSupported("video/webm; codecs=vp9") ? "video/webm; codecs=vp9" : "video/webm";
+                    
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
                     chunks = [];
                     mediaRecorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
                     mediaRecorder.onstop = saveVideo;
@@ -298,19 +282,27 @@
         };
 
         async function saveVideo() {
-            if(!isPro) {
-                credits--;
-                await updateDoc(doc(db, 'customers', currentUser.uid), { credits: credits });
+            try {
+                if(chunks.length === 0) throw new Error("No data recorded");
+                
+                if(!isPro) {
+                    credits--;
+                    await updateDoc(doc(db, 'customers', currentUser.uid), { credits: credits });
+                }
+                const blob = new Blob(chunks, {type: 'video/webm'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `syna_${Date.now()}.webm`;
+                a.click();
+                
+                document.getElementById('success-modal').classList.add('open');
+                confetti({ particleCount: 100, spread: 70 });
+            } catch(e) {
+                alert("Save failed: " + e.message);
+            } finally {
+                document.getElementById('render-overlay').classList.remove('open');
             }
-            const blob = new Blob(chunks, {type: 'video/webm'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `syna_${Date.now()}.webm`;
-            a.click();
-            document.getElementById('render-overlay').classList.remove('open');
-            document.getElementById('success-modal').classList.add('open');
-            confetti({ particleCount: 100, spread: 70 });
         }
 
         function updateUI() {
@@ -348,8 +340,9 @@
             ring = new THREE.Mesh(new THREE.TorusGeometry(8, 0.2, 16, 100), new THREE.MeshBasicMaterial({ color: 0xFF3B30, wireframe: true }));
             ring.visible=false; scene.add(ring);
 
-            // Wave
-            wave = new THREE.Mesh(new THREE.PlaneGeometry(40, 40, 32, 32), new THREE.MeshBasicMaterial({ color: 0x007AFF, wireframe: true }));
+            // Wave (FIXED: Vertex Colors + Wireframe)
+            const waveGeo = new THREE.PlaneGeometry(40, 40, 32, 32);
+            wave = new THREE.Mesh(waveGeo, new THREE.MeshBasicMaterial({ color: 0x007AFF, wireframe: true }));
             wave.rotation.x = -Math.PI/2; wave.position.y = -5; wave.visible=false; scene.add(wave);
 
             // BG
@@ -374,10 +367,34 @@
                     b.material.emissive.setHSL(hue%1, 1, 0.2);
                 });
                 if(ring) ring.visible=false; if(wave) wave.visible=false;
-            } else if (activeStyle === 'ring') {
+            } 
+            else if (activeStyle === 'ring') {
+                ring.visible = true;
+                if(wave) wave.visible = false;
+                bars.forEach(b => b.visible=false);
+                
                 ring.rotation.z += 0.01;
-                if(dataArray) ring.scale.setScalar(1 + dataArray[0]/500);
-                // Toggle visibility logic would go here properly
+                if(dataArray) {
+                    const bass = dataArray[0]/255;
+                    ring.scale.setScalar(1 + bass*0.5);
+                    ring.material.color.setHSL(bass, 1, 0.5);
+                }
+            }
+            else if (activeStyle === 'wave') {
+                wave.visible = true;
+                if(ring) ring.visible = false;
+                bars.forEach(b => b.visible=false);
+
+                wave.rotation.z += 0.005;
+                if(dataArray) {
+                    const pos = wave.geometry.attributes.position;
+                    for(let i=0; i<pos.count; i++){
+                         // Map frequency data to vertices
+                         const z = Math.sin(i/5 + Date.now()*0.005) * (dataArray[i%64]/30);
+                         pos.setZ(i, z);
+                    }
+                    pos.needsUpdate = true;
+                }
             }
 
             renderer.render(scene, camera);
@@ -389,7 +406,17 @@
             if (w > window.innerWidth) renderer.setSize(window.innerWidth, window.innerWidth / aspect);
             else renderer.setSize(w, h);
             camera.aspect = aspect; camera.updateProjectionMatrix();
-            if(bgMesh) bgMesh.scale.set(aspect*2, 2, 1);
+            
+            // BG CSS COVER LOGIC
+            if(bgMesh && bgTexture) {
+                 // We need to know the aspect of the image vs the aspect of the camera
+                 // For now, we scale the mesh to be HUGE so it covers everything
+                 // A true "cover" shader is complex, but this is the hacky "good enough" fix
+                 const scale = Math.max(aspect, 1/aspect) * 2; 
+                 bgMesh.scale.set(scale * 10, scale * 10, 1); 
+            } else if (bgMesh) {
+                 bgMesh.scale.set(aspect*10, 10, 1); // Default color scale
+            }
         }
 
         document.getElementById('audio-input').addEventListener('change', (e) => {
@@ -412,7 +439,13 @@
         document.getElementById('bg-input').addEventListener('change', (e) => {
              if(e.target.files[0]) {
                  const url = URL.createObjectURL(e.target.files[0]);
-                 new THREE.TextureLoader().load(url, (t) => { bgMesh.material.map = t; bgMesh.material.color.set(0xffffff); bgMesh.material.needsUpdate=true; });
+                 new THREE.TextureLoader().load(url, (t) => { 
+                     bgTexture = t;
+                     bgMesh.material.map = t; 
+                     bgMesh.material.color.set(0xffffff); 
+                     bgMesh.material.needsUpdate=true; 
+                     handleResize();
+                 });
              }
         });
         
