@@ -24,6 +24,7 @@
         .credit-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; cursor: pointer; backdrop-filter: blur(10px); }
         .credit-pill.gold { border-color: var(--gold); color: var(--gold); background: rgba(255, 215, 0, 0.15); }
         .btn { background: var(--surface); border: 1px solid var(--border); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; transition: 0.2s; font-size: 0.9rem; }
+        .btn:hover { background: #222; }
         .btn-primary { background: var(--accent); border-color: var(--accent); }
         
         .brand-panel { pointer-events: auto; position: fixed; left: 20px; top: 90px; display: flex; flex-direction: column; gap: 15px; }
@@ -138,12 +139,13 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, addDoc, collection, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // --- FIXED: Added setDoc to imports ---
+        import { getFirestore, doc, onSnapshot, addDoc, collection, query, where, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURATION: PASTE IDs HERE ---
         const PRICES = {
-            monthly: "price_XXXXXXXXXXXXXXXXXXXXXXXX", 
-            lifetime: "price_YYYYYYYYYYYYYYYYYYYYYYYY" 
+            monthly: "price_1SYmHcGTB3aMn43d50Sb5mqI", 
+            lifetime: "price_1SYmHcGTB3aMn43dxrEt5LAB" 
         };
 
         const firebaseConfig = {
@@ -167,7 +169,7 @@
         let audioCtx, analyser, dataArray, audioEl, source;
         let isRecording=false, mediaRecorder, chunks=[], timerInterval;
         let activeStyle = 'bars', currentFormat = '9:16';
-        let bgTexture = null, bgAspect = 1; // Fix for stretching
+        let bgTexture = null;
 
         // --- AUTH ---
         signInAnonymously(auth).catch(console.error);
@@ -224,7 +226,7 @@
             setStyle: (s) => {
                 activeStyle = s;
                 document.querySelectorAll('.style-opt').forEach(el => el.classList.remove('active'));
-                // No class toggle needed for button logic in this simplified version, just logic
+                // No toggle logic for button class needed, just render logic
                 bars.forEach(b => b.visible = (s==='bars'));
                 if(ring) ring.visible = (s==='ring');
                 if(wave) wave.visible = (s==='wave');
@@ -260,7 +262,6 @@
                     source.connect(dest);
                     stream.addTrack(dest.stream.getAudioTracks()[0]);
                     
-                    // Mobile Safari/Chrome Fallback for codecs
                     const mime = MediaRecorder.isTypeSupported("video/webm; codecs=vp9") ? "video/webm; codecs=vp9" : "video/webm";
                     
                     mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
@@ -281,13 +282,20 @@
             }
         };
 
+        // --- FIXED: Self-Healing Save Function ---
         async function saveVideo() {
             try {
                 if(chunks.length === 0) throw new Error("No data recorded");
                 
                 if(!isPro) {
                     credits--;
-                    await updateDoc(doc(db, 'customers', currentUser.uid), { credits: credits });
+                    const userRef = doc(db, 'customers', currentUser.uid);
+                    try {
+                        await updateDoc(userRef, { credits: credits });
+                    } catch(err) {
+                        // Ghost User Fix: Create doc if missing
+                        await setDoc(userRef, { credits: credits }, { merge: true });
+                    }
                 }
                 const blob = new Blob(chunks, {type: 'video/webm'});
                 const url = URL.createObjectURL(blob);
@@ -340,7 +348,7 @@
             ring = new THREE.Mesh(new THREE.TorusGeometry(8, 0.2, 16, 100), new THREE.MeshBasicMaterial({ color: 0xFF3B30, wireframe: true }));
             ring.visible=false; scene.add(ring);
 
-            // Wave (FIXED: Vertex Colors + Wireframe)
+            // Wave
             const waveGeo = new THREE.PlaneGeometry(40, 40, 32, 32);
             wave = new THREE.Mesh(waveGeo, new THREE.MeshBasicMaterial({ color: 0x007AFF, wireframe: true }));
             wave.rotation.x = -Math.PI/2; wave.position.y = -5; wave.visible=false; scene.add(wave);
@@ -372,7 +380,6 @@
                 ring.visible = true;
                 if(wave) wave.visible = false;
                 bars.forEach(b => b.visible=false);
-                
                 ring.rotation.z += 0.01;
                 if(dataArray) {
                     const bass = dataArray[0]/255;
@@ -384,19 +391,16 @@
                 wave.visible = true;
                 if(ring) ring.visible = false;
                 bars.forEach(b => b.visible=false);
-
                 wave.rotation.z += 0.005;
                 if(dataArray) {
                     const pos = wave.geometry.attributes.position;
                     for(let i=0; i<pos.count; i++){
-                         // Map frequency data to vertices
                          const z = Math.sin(i/5 + Date.now()*0.005) * (dataArray[i%64]/30);
                          pos.setZ(i, z);
                     }
                     pos.needsUpdate = true;
                 }
             }
-
             renderer.render(scene, camera);
         }
 
@@ -407,15 +411,12 @@
             else renderer.setSize(w, h);
             camera.aspect = aspect; camera.updateProjectionMatrix();
             
-            // BG CSS COVER LOGIC
+            // CSS COVER LOGIC
             if(bgMesh && bgTexture) {
-                 // We need to know the aspect of the image vs the aspect of the camera
-                 // For now, we scale the mesh to be HUGE so it covers everything
-                 // A true "cover" shader is complex, but this is the hacky "good enough" fix
                  const scale = Math.max(aspect, 1/aspect) * 2; 
                  bgMesh.scale.set(scale * 10, scale * 10, 1); 
             } else if (bgMesh) {
-                 bgMesh.scale.set(aspect*10, 10, 1); // Default color scale
+                 bgMesh.scale.set(aspect*10, 10, 1); 
             }
         }
 
