@@ -170,45 +170,35 @@
         let activeStyle = 'bars', currentFormat = '9:16';
         let bgTexture = null;
 
- // --- AUTH LOGIC ---
+        // --- AUTH LOGIC (No Auto-Ghost) ---
         
-        // 1. Check for Redirect Result (Priority)
         getRedirectResult(auth)
             .then((result) => {
-                if (result) {
-                    console.log("✅ REDIRECT SUCCESS:", result.user.uid);
-                    // The state change listener below will handle the UI update
-                }
+                if (result) console.log("Redirect Login Success:", result.user.uid);
             })
-            .catch((error) => {
-                console.error("Redirect Error:", error);
-            });
+            .catch((error) => console.error("Redirect Error:", error));
 
-        // 2. Monitor Auth State
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 console.log("User Active:", user.uid);
                 
-                // Sync Credits
                 onSnapshot(doc(db, 'customers', user.uid), (snap) => {
                     if(snap.exists()) credits = (snap.data().credits !== undefined) ? snap.data().credits : 3;
                     updateUI();
                 });
                 
-                // Sync Subscription
                 const subQuery = query(collection(db, 'customers', user.uid, 'subscriptions'), where('status', 'in', ['active', 'trialing']));
                 onSnapshot(subQuery, (snapshot) => {
                     isPro = !snapshot.empty;
                     updateUI();
                 });
             } else {
-                // DO NOT AUTO-CREATE GHOST HERE.
-                // Wait for the user to click something.
-                console.log("No user logged in. Waiting...");
-                updateUI(); // Updates UI to show "Log In" or "..."
+                // DO NOT Create Ghost Here. Wait for action.
+                updateUI();
             }
         });
+
         window.app = {
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
             
@@ -217,11 +207,10 @@
                 document.getElementById('auth-modal').classList.add('open');
             },
             
-            // --- LOGIN SWITCH (Redirect) ---
             linkAccount: async () => {
                 try {
-                    await auth.signOut(); // Kill the Ghost
-                    await signInWithRedirect(auth, provider); // Go to Google
+                    await auth.signOut(); 
+                    await signInWithRedirect(auth, provider); 
                 } catch (e) { 
                     console.error(e); 
                     alert("Login Error: " + e.message); 
@@ -270,20 +259,18 @@
                     bgTexture = null;
                 }
             },
-toggleRecord: () => {
+            toggleRecord: () => {
                 if(!audioCtx) { alert("Upload Audio First"); return; }
                 
-                // LAZY GHOST: If no user, create one now
+                // LAZY GHOST: Only create user if recording starts and no one is logged in
                 if (!currentUser) {
                     signInAnonymously(auth).then(() => {
-                        // Once ghost is made, re-run the record logic
                         app.toggleRecord();
                     });
                     return;
                 }
 
                 if(isRecording) {
-                    // ... (Existing stop logic) ...
                     mediaRecorder.stop(); isRecording=false;
                     document.getElementById('rec-btn').classList.remove('recording');
                     clearInterval(timerInterval);
@@ -292,7 +279,6 @@ toggleRecord: () => {
                 } else {
                     if(!isPro && credits <= 0) { document.getElementById('pay-modal').classList.add('open'); return; }
                     
-                    // ... (Existing start logic) ...
                     const stream = document.querySelector('canvas').captureStream(30);
                     const dest = audioCtx.createMediaStreamDestination();
                     source.connect(dest);
@@ -316,8 +302,8 @@ toggleRecord: () => {
                     audioEl.currentTime=0; audioEl.play();
                 }
             }
+        };
 
-        // --- SELF HEALING DATABASE ---
         async function saveVideo() {
             try {
                 if(chunks.length === 0) throw new Error("No data recorded");
@@ -350,8 +336,17 @@ toggleRecord: () => {
         function updateUI() {
             const count = document.getElementById('credit-count');
             const pill = document.getElementById('credit-display');
-            if(isPro) { count.innerText = "UNLIMITED"; pill.classList.add('gold'); }
-            else { count.innerText = `${credits} LEFT`; pill.classList.remove('gold'); }
+            
+            if(isPro) { 
+                count.innerText = "UNLIMITED"; 
+                pill.classList.add('gold'); 
+            } else if (currentUser) { 
+                count.innerText = `${credits} LEFT`; 
+                pill.classList.remove('gold'); 
+            } else {
+                count.innerText = "LOG IN"; 
+                pill.classList.remove('gold'); 
+            }
             lucide.createIcons();
         }
 
