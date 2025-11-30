@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SYNA | Audio Visualizer</title>
     
-    <!-- Cache Control Headers -->
+    <!-- Cache Control -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
-    <meta name="description" content="Turn audio into viral video instantly. The AI visualizer for creators.">
     <meta property="og:title" content="SYNA | Visuals for Audio">
     <meta property="og:image" content="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
@@ -24,47 +23,70 @@
     <style>
         :root { --primary: #FF3B30; --accent: #007AFF; --bg: #050505; --surface: #111; --text: #fff; --border: #333; --gold: #FFD700; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; overflow: hidden; }
-        #viewport { position: relative; width: 100%; height: 100%; overflow: hidden; background: #000; display: flex; justify-content: center; align-items: center; }
-        #canvas-container { width: 100%; height: 100%; display: block; } /* Fixed: Block display for canvas */
-        #watermark-preview { position: absolute; bottom: 30px; right: 30px; font-size: 1.5rem; font-weight: 700; color: rgba(255,255,255,0.4); pointer-events: none; z-index: 2; letter-spacing: 6px; transition: opacity 0.3s; display: flex; align-items: center; gap: 10px; }
+        
+        /* Layout - Fixed for Full Screen */
+        #viewport { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        #canvas-container { width: 100%; height: 100%; display: block; }
+        
+        #watermark-preview { position: absolute; bottom: 120px; right: 30px; font-size: 1.5rem; font-weight: 700; color: rgba(255,255,255,0.4); pointer-events: none; z-index: 2; letter-spacing: 6px; transition: opacity 0.3s; }
+        
         #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        /* Header */
         .header { pointer-events: auto; display: flex; justify-content: space-between; align-items: center; padding: 20px; background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent); }
         .logo img { height: 40px; display: block; }
         .header-actions { display: flex; gap: 10px; align-items: center; }
+        
+        /* Components */
         .credit-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; cursor: pointer; backdrop-filter: blur(10px); }
         .credit-pill.gold { border-color: var(--gold); color: var(--gold); background: rgba(255, 215, 0, 0.15); }
+        
         .btn { background: var(--surface); border: 1px solid var(--border); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; transition: 0.2s; font-size: 0.9rem; }
         .btn:hover { background: #222; }
         .btn-primary { background: var(--accent); border-color: var(--accent); }
+        
+        /* Panels */
         .brand-panel { pointer-events: auto; position: fixed; left: 20px; top: 90px; display: flex; flex-direction: column; gap: 15px; }
         .format-panel { pointer-events: auto; position: fixed; right: 20px; top: 90px; display: flex; flex-direction: column; gap: 15px; }
+        
         .icon-btn { width: 44px; height: 44px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: #ccc; backdrop-filter: blur(5px); transition: 0.2s; position: relative; }
         .icon-btn:hover { background: #fff; color: #000; }
         .icon-btn.active { border-color: var(--accent); color: var(--accent); }
+
         .tooltip { position: absolute; left: 60px; background: #000; padding: 5px 10px; border-radius: 4px; font-size: 0.7rem; opacity: 0; pointer-events: none; transition: 0.2s; white-space: nowrap; }
         .brand-panel .tooltip { left: 60px; }
         .format-panel .tooltip { left: auto; right: 60px; }
         .icon-btn:hover .tooltip { opacity: 1; }
-        .controls { pointer-events: auto; background: var(--surface); border-top: 1px solid var(--border); padding: 20px; display: flex; gap: 20px; align-items: center; justify-content: center; position: fixed; bottom: 0; left: 0; width: 100%; box-sizing: border-box; }
+
+        /* Controls */
+        .controls { pointer-events: auto; background: var(--surface); border-top: 1px solid var(--border); padding: 20px; display: flex; gap: 20px; align-items: center; justify-content: center; position: fixed; bottom: 0; left: 0; width: 100%; box-sizing: border-box; padding-bottom: 40px; /* Safe area */ }
+        
         .record-btn { width: 64px; height: 64px; border-radius: 50%; border: 4px solid #fff; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
         .record-inner { width: 44px; height: 44px; background: var(--primary); border-radius: 50%; transition: 0.3s; }
         .record-btn.recording { border-color: var(--primary); }
         .record-btn.recording .record-inner { width: 24px; height: 24px; border-radius: 4px; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
         .style-selector { position: absolute; top: -60px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
-        .style-opt { padding: 8px 16px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; cursor: pointer; font-size: 0.8rem; backdrop-filter: blur(4px); }
+        .style-opt { padding: 8px 16px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; cursor: pointer; font-size: 0.8rem; backdrop-filter: blur(4px); white-space: nowrap; }
         .style-opt.active { background: #fff; color: #000; }
+
         .title-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; color: white; outline: none; width: 150px; font-size: 0.9rem; }
         .time-display { font-family: monospace; font-size: 1.2rem; width: 80px; text-align: center; font-weight: 700; }
+
+        /* Overlays */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        
         .modal-card { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 30px; width: 500px; max-width: 90%; text-align: center; }
         .buy-btn { width: 100%; padding: 14px; background: #fff; color: #000; border: none; border-radius: 10px; font-weight: 700; margin-top: 15px; cursor: pointer; }
         .google-btn { background: white; color: #333; border: 1px solid #ddd; padding: 10px 20px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
-        #render-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+
+        #render-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
         #render-overlay.open { opacity: 1; pointer-events: auto; }
         .loader { width: 60px; height: 60px; border: 6px solid #FFF; border-bottom-color: var(--accent); border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; margin-bottom: 25px; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         input[type="file"] { display: none; }
     </style>
 </head>
@@ -144,7 +166,6 @@
                     <button class="buy-btn" style="background:black; color:white;" onclick="app.pay('lifetime')">Get Forever</button>
                 </div>
             </div>
-            <!-- NEW: Status Check Button -->
             <button onclick="window.location.reload()" style="margin-top:20px; background:transparent; border:1px solid #444; color:#666; padding:8px 15px; border-radius:8px; cursor:pointer; font-size:0.8rem;">Already paid? Refresh Status</button>
         </div>
     </div>
@@ -184,7 +205,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBALS ---
         const firebaseConfig = {
@@ -216,13 +237,11 @@
         let titleText = "";
 
         // --- AUTH & DATA ---
-        // Attempt anonymous first
         signInAnonymously(auth).catch(console.error);
 
-        onAuthStateChanged(auth, async (user) => {
+        onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                // Path: users/{uid}
                 const docRef = doc(db, 'artifacts', appId, 'users', user.uid);
                 
                 onSnapshot(docRef, async (snap) => {
@@ -232,13 +251,13 @@
                         if (isPro) credits = 999;
                         else credits = (data.credits !== undefined) ? data.credits : 3;
                     } else {
-                        // Create new document (merge to avoid overwriting if exists but empty)
+                        // Initialize new user SAFELY (merge)
                         await setDoc(docRef, { isPro: false, credits: 3, joined: Date.now() }, { merge: true });
                         credits = 3;
                     }
                     updateUI();
                     
-                    // Check for pending payment AFTER auth settles
+                    // Resume payment
                     const pending = sessionStorage.getItem('pendingPlan');
                     if(pending && !isPro && !user.isAnonymous) {
                         sessionStorage.removeItem('pendingPlan');
@@ -286,7 +305,7 @@
             createBgMesh();
             createWatermarkMesh();
             createTitleMesh("");
-            handleResize(); // FORCE RESIZE ON INIT
+            handleResize(); // INITIAL RESIZE FIX
             animate();
         }
 
@@ -302,7 +321,6 @@
                     b.scale.y = s;
                     b.position.y = (s/2)-5;
                     
-                    // Color sync
                     const hue = (i/64) + (Date.now()*0.0001);
                     b.material.color.setHSL(hue%1, 1, 0.5);
                     b.material.emissive.setHSL(hue%1, 1, 0.2);
@@ -333,7 +351,6 @@
             renderer.render(scene, camera);
         }
 
-        // --- HELPERS ---
         function createBgMesh() {
             if(bgMesh) scene.remove(bgMesh);
             bgMesh = new THREE.Mesh(new THREE.PlaneGeometry(100,100), new THREE.MeshBasicMaterial({ color: 0x050505, depthTest:false }));
@@ -342,7 +359,6 @@
         }
 
         function createWatermarkMesh() {
-            // Canvas text for watermark
             const canvas = document.createElement('canvas'); canvas.width=512; canvas.height=128;
             const ctx = canvas.getContext('2d');
             ctx.font = 'bold 40px "Space Grotesk"'; ctx.fillStyle = 'rgba(255,255,255,0.4)';
@@ -369,12 +385,13 @@
 
         function updateWatermarkPosition() {
             if(!watermarkMesh) return;
+            // Adjust for Mobile - Push Higher up if needed
             if(currentFormat === '9:16') watermarkMesh.position.set(6, -15, 5);
             else if(currentFormat === '1:1') watermarkMesh.position.set(8, -8, 5);
             else watermarkMesh.position.set(12, -6, 5);
         }
 
-        // --- UPLOAD HANDLERS ---
+        // --- HANDLERS ---
         document.getElementById('audio-input').addEventListener('change', (e) => {
             if(!e.target.files[0]) return;
             const url = URL.createObjectURL(e.target.files[0]);
@@ -425,7 +442,6 @@
             setStyle: (s) => {
                 activeStyle = s;
                 document.querySelectorAll('.style-opt').forEach(el => el.classList.remove('active'));
-                // logic to highlight active button
             },
             setFormat: (fmt, btn) => {
                 currentFormat = fmt;
@@ -462,7 +478,7 @@
                 }
                 const urls = { monthly: "https://buy.stripe.com/aFa14ndxr6RkaMBc8024002", lifetime: "https://buy.stripe.com/5kQ28rfFzcbEaMBc8024003" };
                 const url = urls[plan] + "?client_reference_id=" + currentUser.uid;
-                window.location.href = url; // HARD REDIRECT
+                window.location.href = url; 
             },
             toggleRecord: () => {
                 if(!audioCtx) { alert("Upload Audio First"); return; }
@@ -508,7 +524,7 @@
                 return; 
             }
             
-            // DEDUCT CREDIT
+            // DEDUCT CREDIT (Async/Await Fix)
             if(!isPro) {
                 try {
                     credits--;
@@ -546,9 +562,10 @@
             const aspect = currentFormat === '9:16' ? 9/16 : (currentFormat === '1:1' ? 1 : 16/9);
             const h = window.innerHeight;
             const w = h * aspect; 
-            // Simple fit logic
+            
+            // FIT TO HEIGHT BY DEFAULT, or FIT TO WIDTH if needed
+            // For Mobile, fitting to width is usually safer to avoid clipping
             if (w > window.innerWidth) {
-               // fit to width
                renderer.setSize(window.innerWidth, window.innerWidth / aspect);
             } else {
                renderer.setSize(w, h);
