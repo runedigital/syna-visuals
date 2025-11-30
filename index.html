@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SYNA | Audio Visualizer</title>
     
+    <!-- Cache Control Headers (CRITICAL) -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -15,7 +16,7 @@
     <meta property="og:image" content="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
     
-    <!-- External Libraries with Cache Buster (v=1.0.0) -->
+    <!-- External Libraries with Cache Buster -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js?v=1.0.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js?v=1.0.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
@@ -672,7 +673,11 @@
         });
 
         // Try to sign in anonymously first.
-        signInAnonymously(auth).catch(console.error);
+        signInAnonymously(auth).catch((error) => {
+            // New logic: If Anonymous sign-in fails due to security block, 
+            // the Auth Wall will appear via the onAuthStateChanged listener above.
+            console.error("Anonymous Sign-in failed (likely domain restriction):", error);
+        });
 
         function handlePermError() {
              if(!window.hasAlerted) {
@@ -902,17 +907,15 @@
             // Check if recording actually produced data
             if (window.chunks.length === 0) {
                 document.getElementById('render-overlay').classList.remove('open');
-                alert("Recording failed or audio was too short.");
+                // Removed alert to prevent blocking the UI
                 return;
             }
 
             // The rest of your saving logic remains here
-            let isPro = false; // Placeholder
-            let credits = 3; // Placeholder
             
             document.getElementById('render-overlay').classList.remove('open');
             
-            if (window.usingCredit) {
+            if (window.usingCredit && currentUser) {
                 // *** CREDIT DEDUCTION LOGIC RESTORED ***
                 try {
                     credits--;
@@ -1188,7 +1191,7 @@
         window.usingCredit = false;
 
         // CRITICAL: Call 3D init after everything is defined
-        init3D(); 
+        window.onload = init3D; // Use onload listener for guaranteed DOM readiness
         lucide.createIcons();
 
     </script>
