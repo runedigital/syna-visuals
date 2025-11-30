@@ -662,7 +662,7 @@
             } else {
                 authReady = true;
                 updateUIState();
-                // We assume Anonymous sign-in failed, so the Auth Wall appears
+                // If Anonymous sign-in fails, show the Auth Wall
                 if(!auth.currentUser) {
                     setTimeout(() => { // Small delay to prevent immediate DOM error
                         document.getElementById('auth-modal').classList.add('open');
@@ -682,12 +682,23 @@
              }
         }
 
-        // --- AUDIO & 3D ENGINE ---
+        // --- AUDIO & 3D ENGINE VARIABLES ---
         let audioCtx, analyser, dataArray, source;
         let audioEl = new Audio();
         audioEl.crossOrigin = "anonymous";
         audioEl.loop = true;
         
+        // --- 3D ENGINE VARIABLES ---
+        let scene, camera, renderer;
+        let bars = [], ring, wave;
+        let logoMesh, titleMesh, watermarkMesh;
+        let bgMesh; 
+        let activeStyle = 'bars';
+        let currentFormat = '9:16';
+        let titleText = "";
+        const textureLoader = new THREE.TextureLoader();
+
+        // --- AUDIO EVENT LISTENERS ---
         document.getElementById('audio-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -706,15 +717,6 @@
             analyser.fftSize = 256;
             dataArray = new Uint8Array(analyser.frequencyBinCount);
         }
-
-        let scene, camera, renderer;
-        let bars = [], ring, wave;
-        let logoMesh, titleMesh, watermarkMesh;
-        let bgMesh; 
-        let activeStyle = 'bars';
-        let currentFormat = '9:16';
-        let titleText = "";
-        const textureLoader = new THREE.TextureLoader();
 
         // --- 3D Initialization Functions ---
         function createTitleMesh(text) {
@@ -888,9 +890,9 @@
         }
 
         function saveVideo() {
-            let usingCredit = false; // Dummy declaration
-            let isPro = false; // Dummy declaration
-            let credits = 3; // Dummy declaration
+            let usingCredit = false; // Placeholder
+            let isPro = false; // Placeholder
+            let credits = 3; // Placeholder
 
             document.getElementById('render-overlay').classList.remove('open');
             
@@ -925,66 +927,29 @@
             }
         }
         
-        function createTitleMesh(text) {
-            if(titleMesh) scene.remove(titleMesh);
-            if(!text) return;
+        function updateUIState() {
+            const wmPreview = document.getElementById('watermark-preview');
+            const pill = document.getElementById('credit-display');
+            const count = document.getElementById('credit-count');
+            const pillIcon = pill.querySelector('i'); 
 
-            const canvas = document.createElement('canvas');
-            canvas.width = 1024;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'rgba(0,0,0,0)'; 
-            ctx.fillRect(0,0, canvas.width, canvas.height);
-            ctx.font = 'bold 80px "Space Grotesk", sans-serif';
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.shadowColor = "rgba(0,0,0,0.8)";
-            ctx.shadowBlur = 10;
-            ctx.fillText(text, canvas.width/2, canvas.height/2);
-            const tex = new THREE.CanvasTexture(canvas);
-            const geo = new THREE.PlaneGeometry(20, 5);
-            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-            titleMesh = new THREE.Mesh(geo, mat);
-            titleMesh.position.set(0, 10, 0); 
-            scene.add(titleMesh);
-        }
-        
-        function createWatermarkMesh() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'rgba(0,0,0,0)';
-            ctx.fillRect(0,0, canvas.width, canvas.height);
-            ctx.font = 'bold 50px "Space Grotesk", sans-serif'; 
-            ctx.fillStyle = 'rgba(255,255,255,0.4)';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'bottom';
-            ctx.letterSpacing = '6px';
-            ctx.fillText("SYNA", canvas.width - 20, canvas.height - 20);
-            const tex = new THREE.CanvasTexture(canvas);
-            const geo = new THREE.PlaneGeometry(10, 2.5);
-            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-            watermarkMesh = new THREE.Mesh(geo, mat);
-            watermarkMesh.visible = false; 
-            scene.add(watermarkMesh);
-        }
+            if (currentUser) {
+                if (pillIcon) { 
+                    pillIcon.setAttribute('data-lucide', currentUser.isAnonymous ? 'user' : 'user-check'); 
+                }
+                pill.title = currentUser.isAnonymous ? "Click to Link Account" : "Account Linked";
+            }
+            lucide.createIcons(); 
 
-        function createBackgroundMesh() {
-            const geo = new THREE.PlaneGeometry(100, 100); 
-            const mat = new THREE.MeshBasicMaterial({ color: 0x050505, depthTest: false }); 
-            bgMesh = new THREE.Mesh(geo, mat);
-            bgMesh.position.z = -50; 
-            bgMesh.renderOrder = -1; 
-            scene.add(bgMesh);
-        }
-        
-        function updateWatermarkPosition() {
-            if(!watermarkMesh) return;
-            if(currentFormat === '9:16') watermarkMesh.position.set(6, -15, 5);
-            else if(currentFormat === '1:1') watermarkMesh.position.set(8, -8, 5);
-            else watermarkMesh.position.set(12, -6, 5);
+            if(isPro) {
+                wmPreview.style.opacity = '0';
+                pill.classList.add('gold');
+                count.innerText = "UNLIMITED";
+            } else {
+                wmPreview.style.opacity = '1';
+                pill.classList.remove('gold');
+                count.innerText = `${credits} LEFT`;
+            }
         }
 
         function handleResize() {
@@ -1025,56 +990,6 @@
                 const vW = vH * aspect;
                 bgMesh.scale.set(vW / 100, vH / 100, 1);
             }
-        }
-        // --- Core 3D Animation Loop (Remains Here) ---
-        function animate() {
-            requestAnimationFrame(animate);
-            if(analyser) analyser.getByteFrequencyData(dataArray);
-
-            if (activeStyle === 'bars') {
-                bars.forEach((bar, i) => {
-                    bar.visible = true;
-                    if(dataArray) {
-                        const val = dataArray[i] || 0;
-                        const scale = (val / 255) * 15 + 0.1;
-                        bar.scale.y = scale;
-                        bar.position.y = (scale / 2) - 5; 
-                        const hue = (i / 64) + (Date.now() * 0.0001);
-                        bar.material.color.setHSL(hue % 1, 1, 0.5);
-                        bar.material.emissive.setHSL(hue % 1, 1, 0.2);
-                    }
-                });
-                ring.visible = false;
-                wave.visible = false;
-            } 
-            else if (activeStyle === 'ring') {
-                bars.forEach(b => b.visible = false);
-                ring.visible = true;
-                wave.visible = false;
-                if(dataArray) {
-                    const bass = dataArray[0] / 255;
-                    ring.scale.setScalar(1 + bass * 0.5);
-                    ring.rotation.z += 0.01;
-                    ring.rotation.x += 0.01;
-                    ring.material.color.setHSL(bass, 1, 0.5);
-                    ring.position.y = -2;
-                }
-            }
-            else if (activeStyle === 'wave') {
-                bars.forEach(b => b.visible = false);
-                ring.visible = false;
-                wave.visible = true;
-                if(dataArray) {
-                    const pos = wave.geometry.attributes.position;
-                    for(let i=0; i<pos.count; i++) {
-                        const z = Math.sin(i + Date.now()*0.005) * (dataArray[i%64]/50);
-                        pos.setZ(i, z);
-                    }
-                    pos.needsUpdate = true;
-                    wave.position.y = -8; 
-                }
-            }
-            renderer.render(scene, camera);
         }
 
         // --- CORE APP LOGIC ---
@@ -1168,14 +1083,7 @@
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
             
             toggleRecord: () => {
-                // [Toggle record logic remains here]
-                let isRecording = false; // Placeholder
-                if(!isRecording) {
-                    // Placeholder call
-                    document.getElementById('rec-btn').classList.add('recording');
-                } else {
-                    document.getElementById('rec-btn').classList.remove('recording');
-                }
+                // Placeholder
             }
         };
 
