@@ -406,6 +406,33 @@
         }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        .auth-wall {
+            position: absolute;
+            inset: 0;
+            z-index: 50;
+            background: rgba(5,5,5,0.9);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+        }
+        .auth-wall h2 { color: var(--gold); margin-bottom: 10px; }
+        .auth-wall p { color: #aaa; margin-bottom: 30px; max-width: 350px; }
+        .auth-wall .google-btn {
+            background: #fff;
+            color: #000;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+        }
+
     </style>
 </head>
 <body>
@@ -413,6 +440,16 @@
     <div id="viewport">
         <div id="canvas-container"></div>
         <div id="watermark-preview"><i data-lucide="waves" size="24"></i> SYNA</div>
+        
+        <!-- Authentication Wall -->
+        <div id="auth-wall" class="auth-wall">
+            <h2>START CREATING</h2>
+            <p>Log in with Google to access your 3 free monthly videos and save your purchase history permanently.</p>
+            <div class="google-btn" onclick="app.login()">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/512px-Google_%22G%22_logo.svg.png" style="width: 20px; height: 20px;">
+                Sign in with Google
+            </div>
+        </div>
     </div>
 
     <div id="ui-layer">
@@ -422,7 +459,7 @@
             </div>
             
             <div class="header-actions">
-                <div class="credit-pill" id="credit-display" onclick="app.login()" title="Click to Link Account">
+                <div class="credit-pill" id="credit-display" onclick="app.showPaymentModal()" title="View Membership Status">
                     <i data-lucide="zap" size="16"></i>
                     <span id="credit-count">...</span>
                 </div>
@@ -547,9 +584,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // --- PRODUCTION FIREBASE CONFIG ---
         const firebaseConfig = {
           apiKey: "AIzaSyB06unFPCYmkomvzc-NH8OFPwGmJTupewo",
           authDomain: "syna-app-ce68f.firebaseapp.com",
@@ -571,11 +609,12 @@
         let credits = 0;
         const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-        signInAnonymously(auth).catch(console.error);
-
+        // AUTHENTICATION STATE HANDLER (Fired on page load/login/logout)
         onAuthStateChanged(auth, async (user) => {
+            const authWall = document.getElementById('auth-wall');
             if (user) {
                 currentUser = user;
+                authWall.style.display = 'none'; // Hide wall
                 const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'syna', 'sub');
                 onSnapshot(docRef, (snap) => {
                     if (snap.exists()) {
@@ -590,6 +629,7 @@
                             credits = (data.credits !== undefined) ? data.credits : 3;
                         }
                     } else {
+                        // New user: Create profile and grant 3 credits
                         setDoc(docRef, { 
                             isPro: false, 
                             credits: 3, 
@@ -601,19 +641,12 @@
                         credits = 3;
                     }
                     updateUIState();
-                    
-                    // Auto-Resume Payment
-                    const pendingPlan = sessionStorage.getItem('pendingPayment');
-                    if (pendingPlan && !isPro) { // Only resume if not already Pro
-                        console.log("Resuming pending payment:", pendingPlan);
-                        sessionStorage.removeItem('pendingPayment'); 
-                        // Delay execution to let auth state settle
-                        setTimeout(() => app.processPayment(pendingPlan), 1500); 
-                    }
-
                 }, (error) => {
                     if (error.code === 'permission-denied') handlePermError();
                 });
+            } else {
+                // Not Logged In
+                authWall.style.display = 'flex'; // Show wall
             }
         });
 
@@ -897,15 +930,29 @@
             },
 
             login: async () => {
+                // Store purchase intent if clicking the pill before login
+                if (document.getElementById('auth-wall').style.display === 'flex') {
+                    sessionStorage.setItem('pendingPayment', 'login_required');
+                }
+                
                 try {
-                    const result = await signInWithPopup(auth, provider);
-                    currentUser = result.user;
+                    await signInWithPopup(auth, provider);
                     // Auth state change listener handles the rest
                 } catch (e) {
                     console.error("Login failed", e);
-                    alert("Login failed. Please try again.");
+                    // Do not alert on common user cancellations (like closing popup)
                 }
             },
+            
+            showPaymentModal: () => {
+                if (!currentUser || !currentUser.uid) {
+                    // If not logged in, clicking the pill triggers login, not pay modal
+                    window.app.login(); 
+                    return;
+                }
+                document.getElementById('pay-modal').classList.add('open');
+            },
+
 
             toggleRecord: () => {
                 if(!audioCtx) { alert("Please upload audio first."); return; }
@@ -917,17 +964,14 @@
                     document.getElementById('render-overlay').classList.add('open');
                     clearInterval(timerInterval);
                 } else {
-                    updateWatermarkPosition();
-                    if (isPro) {
-                        watermarkMesh.visible = false;
-                        usingCredit = false;
-                    } else if (credits > 0) {
-                        watermarkMesh.visible = false;
-                        usingCredit = true;
-                    } else {
-                        watermarkMesh.visible = true;
-                        usingCredit = false;
+                    if (credits <= 0 && !isPro) {
+                         document.getElementById('pay-modal').classList.add('open');
+                         return;
                     }
+
+                    updateWatermarkPosition();
+                    watermarkMesh.visible = !isPro;
+                    usingCredit = !isPro; // Only use credit if NOT Pro
 
                     const stream = document.querySelector('canvas').captureStream(30);
                     const dest = audioCtx.createMediaStreamDestination();
@@ -960,33 +1004,6 @@
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
             
             processPayment: async (plan) => {
-                // Force Google Login for Anonymous users before payment
-                if (currentUser && currentUser.isAnonymous) {
-                    const confirm = window.confirm("To save your subscription, you must link a Google Account first.\n\nClick OK to sign in.");
-                    if(confirm) {
-                        sessionStorage.setItem('pendingPayment', plan);
-                        try {
-                            // Try to link
-                            const result = await linkWithPopup(currentUser, provider);
-                            currentUser = result.user;
-                            sessionStorage.removeItem('pendingPayment'); 
-                        } catch(e) {
-                            // If link fails (e.g. account exists), try regular sign in
-                            try {
-                                const result = await signInWithPopup(auth, provider);
-                                currentUser = result.user;
-                                sessionStorage.removeItem('pendingPayment');
-                            } catch(err) {
-                                console.error(err);
-                                sessionStorage.removeItem('pendingPayment');
-                                return;
-                            }
-                        }
-                    } else {
-                        return; 
-                    }
-                }
-
                 const btnId = plan === 'monthly' ? 'btn-monthly' : 'btn-lifetime';
                 const btn = document.getElementById(btnId);
                 
@@ -1054,23 +1071,17 @@
             const pill = document.getElementById('credit-display');
             const count = document.getElementById('credit-count');
             
-            const existingIcon = pill.querySelector('i, svg');
-            if(existingIcon) existingIcon.remove();
-
-            const newIcon = document.createElement('i');
-            newIcon.setAttribute('size', '16');
-            
-            if (currentUser && !currentUser.isAnonymous) {
-                newIcon.setAttribute('data-lucide', 'user-check'); 
-                pill.title = "Account Linked";
+            // Icon Logic
+            const iconContainer = pill.querySelector('i');
+            if (iconContainer) {
+                iconContainer.setAttribute('data-lucide', currentUser ? 'user-check' : 'zap');
+                pill.title = currentUser ? "Account Linked" : "Click to Sign In";
             } else {
-                newIcon.setAttribute('data-lucide', 'zap');
-                pill.title = "Click to Link Account";
+                 count.innerText = "N/A"; // Handle initial loading state
             }
-            
-            pill.prepend(newIcon);
             lucide.createIcons();
 
+            // Credit/Pro Status
             if(isPro) {
                 wmPreview.style.opacity = '0';
                 pill.classList.add('gold');
