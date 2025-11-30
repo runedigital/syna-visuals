@@ -138,7 +138,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, addDoc, collection, query, where, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURATION ---
@@ -170,12 +170,17 @@
         let activeStyle = 'bars', currentFormat = '9:16';
         let bgTexture = null;
 
-        // --- AUTH ---
-        // 1. Check if we just came back from a Redirect Login
+        // --- AUTH LOGIC ---
+        
+        // 1. Check for Redirect Result (Coming back from Google)
+        getRedirectResult(auth).then((result) => {
+            if(result) console.log("Redirect Login Success:", result.user.uid);
+        }).catch((error) => console.error("Redirect Error:", error));
+
+        // 2. Monitor Auth State
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                console.log("User Logged In:", user.uid);
                 
                 // Sync Credits
                 onSnapshot(doc(db, 'customers', user.uid), (snap) => {
@@ -190,24 +195,24 @@
                     updateUI();
                 });
             } else {
-                // If no user, start anonymous (Ghost Mode)
+                // No user? Become a Ghost.
                 signInAnonymously(auth).catch(console.error);
             }
         });
 
         window.app = {
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
+            
             handleCreditClick: () => {
                 if(isPro) return;
-                // Force auth modal if not pro
                 document.getElementById('auth-modal').classList.add('open');
             },
             
-            // --- NEW: REDIRECT LOGIC (Bypasses Popups) ---
+            // --- LOGIN SWITCH (Redirect) ---
             linkAccount: async () => {
                 try {
-                    await auth.signOut(); // Kill the ghost
-                    await signInWithRedirect(auth, provider); // Send page to Google
+                    await auth.signOut(); // Kill the Ghost
+                    await signInWithRedirect(auth, provider); // Go to Google
                 } catch (e) { 
                     console.error(e); 
                     alert("Login Error: " + e.message); 
@@ -292,6 +297,7 @@
             }
         };
 
+        // --- SELF HEALING DATABASE ---
         async function saveVideo() {
             try {
                 if(chunks.length === 0) throw new Error("No data recorded");
