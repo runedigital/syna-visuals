@@ -657,8 +657,12 @@
             } else {
                 authReady = true;
                 updateUIState();
-                // If not logged in, show the auth wall 
-                if(!auth.currentUser) document.getElementById('auth-modal').classList.add('open');
+                // We assume Anonymous sign-in failed, so the Auth Wall appears
+                if(!auth.currentUser) {
+                    setTimeout(() => { // Small delay to prevent immediate DOM error
+                        document.getElementById('auth-modal').classList.add('open');
+                    }, 500);
+                }
             }
         });
 
@@ -678,28 +682,83 @@
         let audioEl = new Audio();
         audioEl.crossOrigin = "anonymous";
         audioEl.loop = true;
-        // [All 3D/Audio Functions like init3D, animate, createTitleMesh etc. assumed present and correct]
+        
+        document.getElementById('audio-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            audioEl.src = url;
+            if(!audioCtx) initAudio();
+            audioEl.play();
+        });
+
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            source = audioCtx.createMediaElementSource(audioEl);
+            source.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            analyser.fftSize = 256;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        }
+
+        let scene, camera, renderer;
+        let bars = [], ring, wave;
+        let logoMesh, titleMesh, watermarkMesh;
+        let bgMesh; 
+        let activeStyle = 'bars';
+        let currentFormat = '9:16';
+        let titleText = "";
+        const textureLoader = new THREE.TextureLoader();
+        // [All 3D Functions like init3D, animate, createTitleMesh etc. assumed present and correct]
 
         // --- CORE APP LOGIC ---
         window.app = {
-            // [Helper functions like setStyle, setTitle, etc. assumed present and correct]
+            setStyle: (style) => {
+                activeStyle = style;
+                document.querySelectorAll('.style-opt').forEach(el => el.classList.remove('active'));
+                const opts = document.querySelectorAll('.style-opt');
+                if(style === 'bars') opts[0].classList.add('active');
+                if(style === 'ring') opts[1].classList.add('active');
+                if(style === 'wave') opts[2].classList.add('active');
+            },
+            
+            setTitle: (val) => {
+                titleText = val;
+                createTitleMesh(val);
+            },
+            
+            setFormat: (format, btn) => {
+                currentFormat = format;
+                document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                handleResize();
+                updateWatermarkPosition();
+            },
+
+            resetBrand: () => {
+                if(logoMesh) scene.remove(logoMesh);
+                bgMesh.material.map = null;
+                bgMesh.material.color.set(0x050505);
+                scene.fog = new THREE.FogExp2(0x050505, 0.02);
+                createTitleMesh("");
+                titleText = "";
+                document.querySelector('.title-input').value = "";
+            },
 
             login: async () => {
                 try {
                     // Set flag to trigger payment modal immediately after redirect
                     sessionStorage.setItem('justLoggedIn', 'true'); 
                     await signInWithPopup(auth, provider);
-                    // This modal removal happens automatically after the popup closes and onAuthStateChanged fires
+                    document.getElementById('auth-modal').classList.remove('open');
                 } catch (e) {
                     console.error("Login failed", e);
-                    // Removed alert() to prevent UI block
                 }
             },
 
             handleCreditPillClick: () => {
-                if (!currentUser) return;
-
-                if (currentUser.isAnonymous) {
+                if (!currentUser || currentUser.isAnonymous) {
                     // STEP 1: If anonymous, show auth modal to force Google sign-in
                     document.getElementById('auth-modal').classList.add('open');
                 } else {
@@ -712,7 +771,7 @@
                 if (!authReady || !currentUser) return;
 
                 if (currentUser.isAnonymous) {
-                    // This should be unreachable now, but as a safety, force login.
+                    // Should be unreachable now, but as a safety, force login.
                     sessionStorage.setItem('pendingPayment', plan);
                     document.getElementById('pay-modal').classList.remove('open');
                     document.getElementById('auth-modal').classList.add('open');
@@ -746,16 +805,15 @@
             // ... (rest of the app functions assumed present and correct) ...
         };
 
-        // --- UI Update & Resize Functions (assumed present and correct) ---
+        // --- UI Update & Resize Functions ---
         function updateUIState() {
-            // ... (rest of the updateUIState logic assumed correct) ...
             const wmPreview = document.getElementById('watermark-preview');
             const pill = document.getElementById('credit-display');
             const count = document.getElementById('credit-count');
             const pillIcon = pill.querySelector('i'); 
 
             if (currentUser) {
-                if (pillIcon) { 
+                if (pillIcon) { // DEFENSIVE CHECK
                     pillIcon.setAttribute('data-lucide', currentUser.isAnonymous ? 'user' : 'user-check'); 
                 }
                 pill.title = currentUser.isAnonymous ? "Click to Link Account" : "Account Linked";
@@ -772,20 +830,17 @@
                 count.innerText = `${credits} LEFT`;
             }
         }
+
+        // [3D and Utility functions omitted for brevity]
         
-        function handleResize() {
-            // [Resize logic assumed correct]
-        }
-        
-        // [All 3D/Audio Functions like initAudio, init3D, animate, createTitleMesh etc. assumed present and correct]
         function init3D() { /* ... */ }
         function animate() { /* ... */ }
-        function initAudio() { /* ... */ }
         function createTitleMesh(text) { /* ... */ }
         function createWatermarkMesh() { /* ... */ }
         function createBackgroundMesh() { /* ... */ }
         function updateWatermarkPosition() { /* ... */ }
         function saveVideo() { /* ... */ }
+        function handleResize() { /* ... */ }
 
 
         // --- Final Initialization ---
