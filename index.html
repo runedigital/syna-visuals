@@ -138,11 +138,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // --- FIXED: Added setDoc to imports ---
+        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, addDoc, collection, query, where, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURATION: PASTE IDs HERE ---
+        // --- CONFIGURATION ---
         const PRICES = {
             monthly: "price_1SYmHcGTB3aMn43d50Sb5mqI", 
             lifetime: "price_1SYmHcGTB3aMn43dxrEt5LAB" 
@@ -172,19 +171,27 @@
         let bgTexture = null;
 
         // --- AUTH ---
-        signInAnonymously(auth).catch(console.error);
+        // 1. Check if we just came back from a Redirect Login
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
+                console.log("User Logged In:", user.uid);
+                
+                // Sync Credits
                 onSnapshot(doc(db, 'customers', user.uid), (snap) => {
                     if(snap.exists()) credits = (snap.data().credits !== undefined) ? snap.data().credits : 3;
                     updateUI();
                 });
+                
+                // Sync Subscription
                 const subQuery = query(collection(db, 'customers', user.uid, 'subscriptions'), where('status', 'in', ['active', 'trialing']));
                 onSnapshot(subQuery, (snapshot) => {
                     isPro = !snapshot.empty;
                     updateUI();
                 });
+            } else {
+                // If no user, start anonymous (Ghost Mode)
+                signInAnonymously(auth).catch(console.error);
             }
         });
 
@@ -192,32 +199,44 @@
             closeModal: (id) => document.getElementById(id).classList.remove('open'),
             handleCreditClick: () => {
                 if(isPro) return;
-                if(currentUser.isAnonymous) document.getElementById('auth-modal').classList.add('open');
-                else document.getElementById('pay-modal').classList.add('open');
+                // Force auth modal if not pro
+                document.getElementById('auth-modal').classList.add('open');
             },
-          linkAccount: async () => {
+            
+            // --- NEW: REDIRECT LOGIC (Bypasses Popups) ---
+            linkAccount: async () => {
                 try {
-                    alert("Step 1: Attempting to Sign Out Ghost...");
-                    await auth.signOut();
-                    
-                    alert("Step 2: Opening Google Popup...");
-                    const result = await signInWithPopup(auth, provider);
-                    
-                    alert("Step 3: Login Success! Email: " + result.user.email);
-                    
-                    // Force Reload
-                    window.location.reload();
-                    
-                } catch (e) {
-                    console.error("Login Error:", e);
-                    alert("ERROR: " + e.message);
+                    await auth.signOut(); // Kill the ghost
+                    await signInWithRedirect(auth, provider); // Send page to Google
+                } catch (e) { 
+                    console.error(e); 
+                    alert("Login Error: " + e.message); 
                 }
             },
+
+            checkout: async (plan) => {
+                if(!currentUser) return;
+                document.getElementById('pay-modal').classList.remove('open');
+                document.getElementById('render-overlay').classList.add('open');
+                document.getElementById('loader-text').innerText = "REDIRECTING...";
+                try {
+                    const docRef = await addDoc(collection(db, 'customers', currentUser.uid, 'checkout_sessions'), {
+                        price: PRICES[plan],
+                        success_url: window.location.href,
+                        cancel_url: window.location.href,
+                    });
+                    onSnapshot(docRef, (snap) => {
+                        const { url, error } = snap.data();
+                        if(error) { alert(error.message); document.getElementById('render-overlay').classList.remove('open'); }
+                        if(url) window.location.assign(url);
+                    });
+                } catch (e) { console.error(e); alert("Error starting checkout"); }
+            },
+
             // --- CONTROLS ---
             setStyle: (s) => {
                 activeStyle = s;
                 document.querySelectorAll('.style-opt').forEach(el => el.classList.remove('active'));
-                // No toggle logic for button class needed, just render logic
                 bars.forEach(b => b.visible = (s==='bars'));
                 if(ring) ring.visible = (s==='ring');
                 if(wave) wave.visible = (s==='wave');
@@ -273,7 +292,6 @@
             }
         };
 
-        // --- FIXED: Self-Healing Save Function ---
         async function saveVideo() {
             try {
                 if(chunks.length === 0) throw new Error("No data recorded");
@@ -284,7 +302,6 @@
                     try {
                         await updateDoc(userRef, { credits: credits });
                     } catch(err) {
-                        // Ghost User Fix: Create doc if missing
                         await setDoc(userRef, { credits: credits }, { merge: true });
                     }
                 }
@@ -312,7 +329,6 @@
             lucide.createIcons();
         }
 
-        // --- 3D ENGINE ---
         function init3D() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
@@ -322,12 +338,10 @@
             renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
             container.appendChild(renderer.domElement);
 
-            // Lights
             scene.add(new THREE.AmbientLight(0xffffff, 0.1));
             const p1 = new THREE.PointLight(0x007AFF, 1, 100); p1.position.set(10,10,10); scene.add(p1);
             const p2 = new THREE.PointLight(0xFF3B30, 1, 100); p2.position.set(-10,5,10); scene.add(p2);
 
-            // Bars
             const barMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.8 });
             for(let i=0; i<64; i++) {
                 const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1, 0.5), barMat);
@@ -335,16 +349,13 @@
                 scene.add(m); bars.push(m);
             }
 
-            // Ring
             ring = new THREE.Mesh(new THREE.TorusGeometry(8, 0.2, 16, 100), new THREE.MeshBasicMaterial({ color: 0xFF3B30, wireframe: true }));
             ring.visible=false; scene.add(ring);
 
-            // Wave
             const waveGeo = new THREE.PlaneGeometry(40, 40, 32, 32);
             wave = new THREE.Mesh(waveGeo, new THREE.MeshBasicMaterial({ color: 0x007AFF, wireframe: true }));
             wave.rotation.x = -Math.PI/2; wave.position.y = -5; wave.visible=false; scene.add(wave);
 
-            // BG
             bgMesh = new THREE.Mesh(new THREE.PlaneGeometry(100,100), new THREE.MeshBasicMaterial({ color: 0x050505, depthTest:false }));
             bgMesh.position.z = -50; bgMesh.renderOrder = -1; scene.add(bgMesh);
 
@@ -402,7 +413,6 @@
             else renderer.setSize(w, h);
             camera.aspect = aspect; camera.updateProjectionMatrix();
             
-            // CSS COVER LOGIC
             if(bgMesh && bgTexture) {
                  const scale = Math.max(aspect, 1/aspect) * 2; 
                  bgMesh.scale.set(scale * 10, scale * 10, 1); 
