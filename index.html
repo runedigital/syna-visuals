@@ -721,6 +721,38 @@
             if(!audioCtx) initAudio();
             audioEl.play();
         });
+        
+        // --- IMAGE UPLOAD LISTENERS (FIXED) ---
+        document.getElementById('logo-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const url = URL.createObjectURL(file);
+            if(logoMesh) scene.remove(logoMesh);
+            textureLoader.load(url, (tex) => {
+                const aspect = tex.image.width / tex.image.height;
+                const geo = new THREE.PlaneGeometry(10 * aspect, 10); 
+                const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+                logoMesh = new THREE.Mesh(geo, mat);
+                logoMesh.position.set(0, 8, -5);
+                scene.add(logoMesh);
+            });
+        });
+
+        document.getElementById('bg-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const url = URL.createObjectURL(file);
+            
+            textureLoader.load(url, (tex) => {
+                bgMesh.material.map = tex;
+                bgMesh.material.color.setHex(0x999999); 
+                bgMesh.material.needsUpdate = true;
+                scene.background = null;
+                scene.fog = null;
+                handleResize(); 
+            });
+        });
+
 
         function initAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -759,6 +791,8 @@
         }
         
         function createWatermarkMesh() {
+            if (watermarkMesh) scene.remove(watermarkMesh);
+            
             const canvas = document.createElement('canvas');
             canvas.width = 512;
             canvas.height = 128;
@@ -780,6 +814,7 @@
         }
 
         function createBackgroundMesh() {
+            if (bgMesh) scene.remove(bgMesh);
             const geo = new THREE.PlaneGeometry(100, 100); 
             const mat = new THREE.MeshBasicMaterial({ color: 0x050505, depthTest: false }); 
             bgMesh = new THREE.Mesh(geo, mat);
