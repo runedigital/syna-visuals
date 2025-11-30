@@ -195,27 +195,24 @@
                 if(currentUser.isAnonymous) document.getElementById('auth-modal').classList.add('open');
                 else document.getElementById('pay-modal').classList.add('open');
             },
-                        linkAccount: async () => {
+          linkAccount: async () => {
                 try {
-                    // 1. FORCE SIGN OUT FIRST (Kill the Ghost)
+                    alert("Step 1: Attempting to Sign Out Ghost...");
                     await auth.signOut();
                     
-                    // 2. FORCE SIGN IN (Fresh Login)
-                    await signInWithPopup(auth, provider);
+                    alert("Step 2: Opening Google Popup...");
+                    const result = await signInWithPopup(auth, provider);
                     
-                    // 3. CLOSE MODALS
-                    document.getElementById('auth-modal').classList.remove('open');
-                    document.getElementById('pay-modal').classList.add('open');
+                    alert("Step 3: Login Success! Email: " + result.user.email);
                     
-                    // 4. RELOAD TO UPDATE UI (Safety Refresh)
+                    // Force Reload
                     window.location.reload();
                     
                 } catch (e) {
                     console.error("Login Error:", e);
-                    alert("Login failed. Please try again.");
+                    alert("ERROR: " + e.message);
                 }
             },
-
             // --- CONTROLS ---
             setStyle: (s) => {
                 activeStyle = s;
